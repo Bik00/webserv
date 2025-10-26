@@ -26,3 +26,23 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &ref)
     }
     return *this;
 }
+
+std::string ServerConfig::getHost(void) const
+{
+    return this->address;
+}
+
+unsigned int ServerConfig::getPort(void) const
+{
+    return this->port;
+}
+
+std::string ServerConfig::getRoot(void) const
+{
+    return this->root;
+}
+
+std::string ServerConfig::getIndex(void) const
+{
+    return this->index;
+}
