@@ -1,10 +1,6 @@
 #include "../../includes/Header.hpp"
 
-HttpConfig::HttpConfig(void) : port(80), address("localhost")
-{
-}
-
-HttpConfig::HttpConfig(unsigned int port, std::string address) : port(port), address(address)
+HttpConfig::HttpConfig(void)
 {
 }
 
@@ -12,23 +8,35 @@ HttpConfig::~HttpConfig(void)
 {
 }
 
-HttpConfig::HttpConfig(const HttpConfig &ref) : port(ref.port), address(ref.address)
+HttpConfig::HttpConfig(const HttpConfig &ref)
 {
+    *this = ref;
 }
 
 HttpConfig &HttpConfig::operator=(const HttpConfig &ref)
 {
     if (this != &ref)
     {
-        this->port = ref.port;
-        this->address = ref.address;
+        this->servers = ref.servers;
     }
     return *this;
 }
 
-void    HttpConfig::getInfo(void)
+bool HttpConfig::loadFromFile(const std::string &path)
 {
-    std::cout << "HttpConfig has been launched!" << std::endl;
-    std::cout << "port: " << this->port << std::endl;
-    std::cout << "address: " << this->address << std::endl;
+    (void)path;
+    // parser not yet implemented
+    return false;
+}
+
+void    HttpConfig::getInfo(void) const
+{
+    std::cout << "HttpConfig: " << servers.size() << " servers loaded" << std::endl;
+    for (size_t i = 0; i < servers.size(); ++i)
+    {
+        const ServerConfig &s = servers[i];
+        std::cout << "Server " << i << ": " << s.getHost() << ":" << s.getPort() << std::endl;
+        std::cout << "  root: " << s.getRoot() << " index: " << s.getIndex() << std::endl;
+        std::cout << std::endl;
+    }
 }

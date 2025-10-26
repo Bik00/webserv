@@ -2,19 +2,23 @@
 # define HTTP_CONFIG_HPP
 
 # include "../libs/Libs.hpp"
+# include "ServerConfig.hpp"
 
 class HttpConfig
 {
 private:
-    unsigned int    port;
-    std::string     address;
+	std::vector<ServerConfig> servers;
 public:
 	HttpConfig(void);
-	HttpConfig(unsigned int port, std::string address);
 	~HttpConfig(void);
 	HttpConfig(const HttpConfig &ref);
 	HttpConfig &operator=(const HttpConfig &ref);
-    void    getInfo(void);
+
+	// load configuration from file
+	bool loadFromFile(const std::string &path);
+
+	// debug: print loaded servers
+	void getInfo(void) const;
 };
 
 #endif /* HTTP_CONFIG_HPP */
