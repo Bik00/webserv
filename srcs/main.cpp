@@ -2,13 +2,27 @@
 
 int main(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
+    HttpConfig *config;
+    try
+    {
+        if (argc != 2)
+        {
+            throw std::runtime_error("write './webserv <config_file>'.");
+        }
+        else
+        {
+            config = new HttpConfig();
 
-    HttpConfig *config = new HttpConfig();
-    config->getInfo();
+            config->loadFromFile(argv[1]);
+            config->getInfo();
+            delete config;
+        }
+    }
+    catch(const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return (EXIT_FAILURE);
+    }
 
-    delete config;
-
-    return 0;
+    return (EXIT_SUCCESS);
 }

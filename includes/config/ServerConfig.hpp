@@ -27,6 +27,14 @@ public:
     unsigned int getPort(void) const;
     std::string getRoot(void) const;
     std::string getIndex(void) const;
+    
+    void setHost(const std::string &host);
+    void setPort(unsigned int port);
+    void setRoot(const std::string &root);
+    void setIndex(const std::string &index);
+    void addServerName(const std::string &name);
+    void addErrorPage(int code, const std::string &path);
+    void addLocation(const LocationConfig &location);
 };
 
 #endif /* SERVER_CONFIG_HPP */

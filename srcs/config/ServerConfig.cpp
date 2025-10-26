@@ -46,3 +46,38 @@ std::string ServerConfig::getIndex(void) const
 {
     return this->index;
 }
+
+void ServerConfig::setHost(const std::string &host)
+{
+    this->address = host;
+}
+
+void ServerConfig::setPort(unsigned int port)
+{
+    this->port = port;
+}
+
+void ServerConfig::setRoot(const std::string &root)
+{
+    this->root = root;
+}
+
+void ServerConfig::setIndex(const std::string &index)
+{
+    this->index = index;
+}
+
+void ServerConfig::addServerName(const std::string &name)
+{
+    this->server_names.push_back(name);
+}
+
+void ServerConfig::addErrorPage(int code, const std::string &path)
+{
+    this->error_pages[code] = path;
+}
+
+void ServerConfig::addLocation(const LocationConfig &location)
+{
+    this->locations.push_back(location);
+}
