@@ -19,6 +19,9 @@ public:
 
 	// debug: print loaded servers
 	void getInfo(void) const;
+
+	// number of parsed servers
+	size_t getServerCount(void) const;
 };
 
 #endif /* HTTP_CONFIG_HPP */

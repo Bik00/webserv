@@ -162,3 +162,8 @@ void    HttpConfig::getInfo(void) const
         std::cout << std::endl;
     }
 }
+
+size_t HttpConfig::getServerCount(void) const
+{
+    return this->servers.size();
+}

@@ -8,5 +8,6 @@
 # include <map>
 # include <fstream>
 # include <cstdlib>
+# include <cctype>
 
 #endif /* LIBS_HPP */
