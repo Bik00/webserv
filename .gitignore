@@ -1,0 +1,13 @@
+webserv
+
+/build
+*.o
+*.swp
+
+/.vscode
+
+*.md
+*.png
+*.pdf
+*.txt
+*.sh

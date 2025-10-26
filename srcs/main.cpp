@@ -1,11 +1,12 @@
-#include "../includes/header.hpp"
+#include "../includes/Header.hpp"
 
 int main(int argc, char **argv)
 {
-    HttpConfig config;
+    (void)argc;
+    (void)argv;
 
-    config = new HttpConfig(80, "localhost");
-    config.getInfo();
+    HttpConfig *config = new HttpConfig(80, "localhost");
+    config->getInfo();
 
     delete config;
 
