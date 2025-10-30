@@ -8,7 +8,7 @@ SRCS_DIR   := srcs
 HEAD_DIR   := includes
 OBJS_DIR   := objs
 
-SRCS      := $(shell find $(SRC_DIR) -name '*.cpp')
+SRCS      := $(shell find $(SRCS_DIR) -name '*.cpp')
 OBJS      := $(patsubst $(SRCS_DIR)/%.cpp,$(OBJS_DIR)/%.o,$(SRCS))
 
 # ====== Rules ======
