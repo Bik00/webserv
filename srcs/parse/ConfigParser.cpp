@@ -64,11 +64,12 @@ bool ConfigParser::parseConfigFile(HttpConfig **config, const std::string &path)
         }
 
         // detect server token (token may include braces, so strip them)
-        std::string t = token;
-        // remove leading/trailing braces/semicolons
-        while (!t.empty() && (t.front() == '{' || t.front() == '}' || t.front() == ';')) t.erase(t.begin());
-        while (!t.empty() && (t.back() == '{' || t.back() == '}' || t.back() == ';')) t.pop_back();
-        if (t == "server") ++server_count;
+    std::string t = token;
+    // remove leading braces/semicolons
+    while (!t.empty() && (t[0] == '{' || t[0] == '}' || t[0] == ';')) t.erase(0, 1);
+    // remove trailing braces/semicolons
+    while (!t.empty() && (t[t.size() - 1] == '{' || t[t.size() - 1] == '}' || t[t.size() - 1] == ';')) t.erase(t.size() - 1, 1);
+    if (t == "server") ++server_count;
     }
 
     if (brace_balance != 0)

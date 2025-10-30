@@ -4,14 +4,12 @@ int main(int argc, char **argv)
 {
     HttpConfig *config;
     ConfigParser parser;
+    std::string configPath;
+
+    configPath = (argc == 2) ? argv[1] : "./config/default.conf";
     try
     {
-        if (argc != 2)
-        {
-            throw std::runtime_error("write './webserv <config_file>'.");
-        }
-
-        if (!parser.parseConfigFile(&config, argv[1]))
+        if (!parser.parseConfigFile(&config, configPath))
         {
             throw std::runtime_error(std::string("Could not parse config file: ") + argv[1]);
         }
