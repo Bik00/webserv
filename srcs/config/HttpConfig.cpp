@@ -167,3 +167,12 @@ size_t HttpConfig::getServerCount(void) const
 {
     return this->servers.size();
 }
+
+const ServerConfig &HttpConfig::getServer(size_t idx) const
+{
+    if (idx >= this->servers.size())
+    {
+        throw std::out_of_range("HttpConfig::getServer index out of range");
+    }
+    return this->servers[idx];
+}

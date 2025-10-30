@@ -15,6 +15,23 @@ int main(int argc, char **argv)
         }
 
         config->getInfo();
+
+        ServerManager manager;
+        size_t count = config->getServerCount();
+        for (size_t i = 0; i < count; ++i)
+        {
+            const ServerConfig &srv = config->getServer(i);
+            if (!manager.createServer(srv))
+            {
+                std::cerr << "Failed to create server for " << srv.getHost() << ":" << srv.getPort() << std::endl;
+            }
+        }
+
+        manager.runServers();
+
+        // in a real server we'd block here; for now close and exit
+        manager.closeServers();
+
         delete config;
     }
     catch(const std::exception &e)

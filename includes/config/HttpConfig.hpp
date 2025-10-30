@@ -22,6 +22,9 @@ public:
 
 	// number of parsed servers
 	size_t getServerCount(void) const;
+
+	// get server config by index
+	const ServerConfig &getServer(size_t idx) const;
 };
 
 #endif /* HTTP_CONFIG_HPP */
