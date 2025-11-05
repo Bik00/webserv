@@ -115,6 +115,8 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
 
     std::string line;
     size_t lineno = 0;
+    std::set<std::string> seenKeys;
+
     while (std::getline(ifs, line))
     {
         ++lineno;
@@ -168,7 +170,15 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
         }
 
         // success: key = s.substr(i, sp-i), value = s.substr(k, j-k)
-        // we don't store them here; blockParse will handle storing
+        std::string key = s.substr(i, sp - i);
+        // check duplicate key
+        if (seenKeys.find(key) != seenKeys.end())
+        {
+            std::cerr << "Duplicate directive key '" << key << "' at line " << lineno << std::endl;
+            return false;
+        }
+        seenKeys.insert(key);
+        // we don't store values here; blockParse will handle storing
     }
     return true;
 }
