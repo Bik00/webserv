@@ -42,8 +42,10 @@ bool ConfigParser::generalParse(int argc, char **argv)
     if (configPath.empty())
         ret = false;
     if (ret)
-    {
         ret = utils.ValidatePath(configPath);
+    if (ret)
+    {
+        ret = utils.CheckSimpleDirectives(configPath);
     }
 
     return ret;

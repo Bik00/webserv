@@ -12,7 +12,8 @@ public:
     GeneralParseUtils &operator=(const GeneralParseUtils &ref);
 
     std::string CheckArgc(int argc, char **argv);
-    bool ValidatePath(const std::string &path);
+    bool ValidatePath(const std::string &configPath);
+    bool CheckSimpleDirectives(const std::string &configPath);
 };
 
 #endif /* GENERAL_PARSE_UTILS_HPP */

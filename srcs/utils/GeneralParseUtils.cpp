@@ -24,18 +24,24 @@ std::string GeneralParseUtils::CheckArgc(int argc, char **argv)
     std::string configPath;
 
     if (argc > 2)
+    {
         throw std::runtime_error("Too many arguments. Usage: ./webserv <config_file>");
+    }
     else if (argc == 1)
+    {
         configPath = DEFAULT_CONFIG_PATH;
+    }
     else
+    {
         configPath = argv[1];
+    }
 
     return (configPath);
 }
 
-bool GeneralParseUtils::ValidatePath(const std::string &path)
+bool GeneralParseUtils::ValidatePath(const std::string &configPath)
 {
-    // split path into components
+    // split configPath into components
     std::vector<std::string> comps;
     size_t start = 0;
     // handle leading slash
@@ -94,4 +100,75 @@ bool GeneralParseUtils::ValidatePath(const std::string &path)
         std::cerr << "Config file not found: " << filePath << std::endl;
         return false;
     }
+    return true;
+}
+
+bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
+{
+    // 파일 읽어들이기 및 simple directive 검사
+    std::ifstream ifs(configPath.c_str());
+    if (!ifs)
+    {
+        std::cerr << "Could not open config file: " << configPath << std::endl;
+        return false;
+    }
+
+    std::string line;
+    size_t lineno = 0;
+    while (std::getline(ifs, line))
+    {
+        ++lineno;
+        // trim leading/trailing whitespace
+        size_t a = 0;
+        while (a < line.size() && isspace(static_cast<unsigned char>(line[a]))) ++a;
+        size_t b = line.size();
+        while (b > a && isspace(static_cast<unsigned char>(line[b-1]))) --b;
+        if (a >= b) continue; // empty line
+        std::string s = line.substr(a, b - a);
+        // skip comments
+        if (s.size() >= 1 && s[0] == '#') continue;
+        // skip block open/close
+        if (s == "{" || s == "}") continue;
+
+        // simple directive should end with semicolon
+        if (s.empty() || s[s.size() - 1] != ';')
+        {
+            std::cerr << "Syntax error (missing ';') at line " << lineno << std::endl;
+            return false;
+        }
+
+        // remove trailing semicolon and trim again
+        s.erase(s.size() - 1);
+        size_t i = 0;
+        while (i < s.size() && isspace(static_cast<unsigned char>(s[i]))) ++i;
+        size_t j = s.size();
+        while (j > i && isspace(static_cast<unsigned char>(s[j-1]))) --j;
+        if (i >= j)
+        {
+            std::cerr << "Empty directive at line " << lineno << std::endl;
+            return false;
+        }
+
+        // now find first whitespace separating key and value
+        size_t sp = i;
+        while (sp < j && !isspace(static_cast<unsigned char>(s[sp]))) ++sp;
+        if (sp == j)
+        {
+            std::cerr << "Directive has no value at line " << lineno << std::endl;
+            return false;
+        }
+
+        // ensure at least one space between key and value and value non-empty
+        size_t k = sp;
+        while (k < j && isspace(static_cast<unsigned char>(s[k]))) ++k;
+        if (k >= j)
+        {
+            std::cerr << "Directive has empty value at line " << lineno << std::endl;
+            return false;
+        }
+
+        // success: key = s.substr(i, sp-i), value = s.substr(k, j-k)
+        // we don't store them here; blockParse will handle storing
+    }
+    return true;
 }

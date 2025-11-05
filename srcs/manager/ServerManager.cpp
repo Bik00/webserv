@@ -25,7 +25,7 @@ void ServerManager::Run(int argc, char **argv)
     ConfigParser parser;
 
     if (parser.Parse(argc, argv, this->config) == false)
-        throw new std::runtime_error("Configuration parsing failed");
+        throw std::runtime_error("Configuration parsing failed");
 }
 
 int ServerManager::exitServer(const std::string &message)
