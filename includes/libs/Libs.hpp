@@ -9,12 +9,13 @@
 # include <string>
 # include <vector>
 # include <map>
+# include <set>
 # include <fstream>
 # include <cstdlib>
 # include <cctype>
 # include <algorithm>
 # include <sstream>
-
+# include <stdexcept>
 
 # include <unistd.h>
 # include <fcntl.h>

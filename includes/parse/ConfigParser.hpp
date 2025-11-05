@@ -9,11 +9,11 @@
 class ConfigParser
 {
 private:
-	bool validate(int argc, char **argv)
+	bool validate(int argc, char **argv);
 	bool validateGeneral(int argc, char **argv);
-	bool validateBlocks(int argc, char **argv);
-	bool setGeneral(int argc, char **argv, Config &config);
-	bool setBlocks(int argc, char **argv, Config &config);
+	bool validateBlocks(char **argv);
+	bool setGeneral(char **argv, Config &config);
+	bool setBlocks(char **argv, Config &config);
 public:
 	ConfigParser(void);
 	~ConfigParser(void);

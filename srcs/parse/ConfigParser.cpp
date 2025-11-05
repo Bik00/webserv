@@ -25,9 +25,9 @@ bool ConfigParser::Parse(int argc, char **argv, Config &config)
 
     ret = validate(argc, argv);
     if (ret)
-        ret = generalParse(argc, argv, config);
+        ret = setGeneral(argv, config);
     if (ret)
-        ret = blockParse(argc, argv, config);
+        ret = setBlocks(argv, config);
     return (true);
 }
 
@@ -37,7 +37,7 @@ bool ConfigParser::validate(int argc, char **argv)
 
     ret = validateGeneral(argc, argv);
     if (ret)
-        ret = validateBlocks(argc, argv);
+        ret = validateBlocks(argv);
     return (ret);
 }
 
@@ -59,23 +59,21 @@ bool ConfigParser::validateGeneral(int argc, char **argv)
     return ret;
 }
 
-bool ConfigParser::validateBlocks(int argc, char **argv)
+bool ConfigParser::validateBlocks(char **argv)
 {
-    (void)config;
+    (void)argv;
     return (true);
 }
 
-bool ConfigParser::setGeneral(int argc, char **argv, Config &config)
+bool ConfigParser::setGeneral(char **argv, Config &config)
 {
-    (void)argc;
     (void)argv;
     (void)config;
     return (true);
 }
 
-bool ConfigParser::setBlocks(int argc, char **argv, Config &config)
+bool ConfigParser::setBlocks(char **argv, Config &config)
 {
-    (void)argc;
     (void)argv;
     (void)config;
     return (true);
