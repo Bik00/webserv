@@ -1,4 +1,5 @@
 #include "../../includes/manager/ServerManager.hpp"
+#include "../../includes/parse/ConfigParser.hpp"
 
 ServerManager::ServerManager(void)
 {
@@ -19,16 +20,17 @@ ServerManager &ServerManager::operator=(const ServerManager &ref)
     return (*this);
 }
 
-int ServerManager::run(int argc, char **argv)
+void ServerManager::Run(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
-    return (EXIT_SUCCESS);
+    ConfigParser parser;
+
+    if (parser.Parse(argc, argv, this->config) == false)
+        throw new std::runtime_error("Configuration parsing failed");
 }
 
-int ServerManager::exitServer(const std::string &msg)
+int ServerManager::exitServer(const std::string &message)
 {
-    std::cerr << msg << std::endl;
-    closeServers();
+    if (!message.empty())
+        std::cerr << "Error: " << message << std::endl;
     return (EXIT_FAILURE);
 }

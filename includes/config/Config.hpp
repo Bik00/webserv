@@ -8,7 +8,7 @@
 class Config
 {
 private:
-    std::vector<std::map<std::string, std::string>>	simpleDirectives;
+	std::vector<std::map<std::string, std::string> >	simpleDirectives;
     std::vector<HttpBlock>							httpBlocks;
 	std::vector<EventBlock>							eventBlocks;
 

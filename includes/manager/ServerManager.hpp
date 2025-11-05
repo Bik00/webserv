@@ -15,8 +15,8 @@ public:
     ServerManager(const ServerManager &ref);
     ServerManager &operator=(const ServerManager &ref);
 
-    int run(int argc, char **argv);
-    int exitServer(const std::string &msg);
+    void    Run(int argc, char **argv);
+    int     exitServer(const std::string &message);
 };
 
 #endif /* SERVER_MANAGER_HPP */

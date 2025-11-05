@@ -17,7 +17,9 @@ Config &Config::operator=(const Config &ref)
 {
     if (this != &ref)
     {
-        this->servers = ref.servers;
+    this->simpleDirectives = ref.simpleDirectives;
+    this->httpBlocks = ref.httpBlocks;
+    this->eventBlocks = ref.eventBlocks;
     }
     return *this;
 }

@@ -2,15 +2,16 @@
 
 int main(int argc, char **argv)
 {
-    ServerManager manager;
+    int             ret = EXIT_SUCCESS;
+    ServerManager   manager;
 
     try
     {
-        ret = manager.run(argc, argv);
+        manager.Run(argc, argv);
     }
     catch(const std::exception &e)
     {
-        ret = manager.exitServer("Error: " + e.what());
+        ret = manager.exitServer(e.what());
     }
 
     return (ret);

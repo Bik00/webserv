@@ -1,4 +1,4 @@
-(#include "../../../includes/config/block/ServerBlock.hpp")
+#include "../../../includes/config/block/ServerBlock.hpp"
 
 ServerBlock::ServerBlock(void)
 {
