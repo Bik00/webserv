@@ -23,36 +23,60 @@ bool ConfigParser::Parse(int argc, char **argv, Config &config)
 {
     bool ret = true;
 
-    ret = generalParse(argc, argv);
-    if (ret == false)
-        return (false);
-    ret = blockParse(config);
-    if (ret == false)
-        return (false);
+    ret = validate(argc, argv);
+    if (ret)
+        ret = generalParse(argc, argv, config);
+    if (ret)
+        ret = blockParse(argc, argv, config);
     return (true);
 }
 
-bool ConfigParser::generalParse(int argc, char **argv)
+bool ConfigParser::validate(int argc, char **argv)
 {
-    GeneralParseUtils   utils;
+    bool ret = true;
+
+    ret = validateGeneral(argc, argv);
+    if (ret)
+        ret = validateBlocks(argc, argv);
+    return (ret);
+}
+
+bool ConfigParser::validateGeneral(int argc, char **argv)
+{
+    GeneralParseUtils   generalUtils;
+    BlockParseUtils     blockUtils;
     bool                ret = true;
     std::string         configPath;
 
-    configPath = utils.CheckArgc(argc, argv);
+    configPath = generalUtils.CheckArgc(argc, argv);
     if (configPath.empty())
         ret = false;
     if (ret)
-        ret = utils.ValidatePath(configPath);
+        ret = generalUtils.ValidatePath(configPath);
     if (ret)
-    {
-        ret = utils.CheckSimpleDirectives(configPath);
-    }
+        ret = generalUtils.CheckSimpleDirectives(configPath);
 
     return ret;
 }
 
-bool ConfigParser::blockParse(Config &config)
+bool ConfigParser::validateBlocks(int argc, char **argv)
 {
+    (void)config;
+    return (true);
+}
+
+bool ConfigParser::setGeneral(int argc, char **argv, Config &config)
+{
+    (void)argc;
+    (void)argv;
+    (void)config;
+    return (true);
+}
+
+bool ConfigParser::setBlocks(int argc, char **argv, Config &config)
+{
+    (void)argc;
+    (void)argv;
     (void)config;
     return (true);
 }

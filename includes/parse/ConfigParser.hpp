@@ -9,14 +9,16 @@
 class ConfigParser
 {
 private:
-	bool generalParse(int argc, char **argv);
-	bool blockParse(Config &config);
+	bool validate(int argc, char **argv)
+	bool validateGeneral(int argc, char **argv);
+	bool validateBlocks(int argc, char **argv);
+	bool setGeneral(int argc, char **argv, Config &config);
+	bool setBlocks(int argc, char **argv, Config &config);
 public:
 	ConfigParser(void);
 	~ConfigParser(void);
 	ConfigParser(const ConfigParser &ref);
 	ConfigParser &operator=(const ConfigParser &ref);
-
 	bool Parse(int argc, char **argv, Config &config);
 };
 
