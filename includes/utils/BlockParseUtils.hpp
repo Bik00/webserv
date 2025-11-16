@@ -13,8 +13,8 @@ public:
     BlockParseUtils(const BlockParseUtils &ref);
     BlockParseUtils &operator=(const BlockParseUtils &ref);
 
-    bool    CheckHttpBlock(char **argv);
-    bool    CheckEventBlock(char **argv);
+    bool    CheckHttpBlock(char **argv, Config &config);
+    bool    CheckEventBlock(char **argv, Config &config);
 };
 
 #endif /* BLOCK_PARSE_UTILS_HPP */

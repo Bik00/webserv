@@ -19,9 +19,10 @@ BlockParseUtils &BlockParseUtils::operator=(const BlockParseUtils &ref)
     return (*this);
 }
 
-bool BlockParseUtils::CheckHttpBlock(char **argv)
+bool BlockParseUtils::CheckHttpBlock(char **argv, Config &config)
 {
     (void)argv;
+    (void)config;
     return (true);
 }
 
@@ -76,9 +77,10 @@ bool BlockParseUtils::checkBlockContext(std::string key, std::ifstream &ifs)
     return true;
 }
 
-bool BlockParseUtils::CheckEventBlock(char **argv)
+bool BlockParseUtils::CheckEventBlock(char **argv,  Config &config)
 {
-    std::ifstream ifs(argv[1].c_str());
+    (void)config; // currently config is unused here
+    std::ifstream ifs(argv[1]);
     std::string token;
     int eventsCount = 0;
 

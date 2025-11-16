@@ -133,7 +133,8 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
         std::string s = line.substr(a, b - a);
         // skip comments
         if (s.size() >= 1 && s[0] == '#') continue;
-    // 단독 줄의 '{' 또는 '}'는 중첩 깊이를 조정합니다.
+
+        // 단독 줄의 '{' 또는 '}'는 중첩 깊이를 조정합니다.
         if (s == "{")
         {
             ++skipDepth;
@@ -168,14 +169,14 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
             }
         }
 
-    // 주석을 제거한 뒤 다시 트리밍합니다
+        // 주석을 제거한 뒤 다시 트리밍합니다
         size_t i = 0;
         while (i < s.size() && isspace(static_cast<unsigned char>(s[i]))) ++i;
         size_t j = s.size();
         while (j > i && isspace(static_cast<unsigned char>(s[j-1]))) --j;
         if (i >= j) continue; // line became empty after comment
 
-    // 지시문이 따옴표 밖에서 세미콜론으로 끝나는지 확인합니다
+        // 지시문이 따옴표 밖에서 세미콜론으로 끝나는지 확인합니다
         in_quote = false;
         bool semicolon_found = false;
         for (size_t idx = i; idx < j; ++idx)
@@ -209,8 +210,8 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
             return false;
         }
 
-    // 이제 키와 값을 추출합니다. 값은 따옴표로 묶여 공백을 포함할 수 있습니다.
-    // 키 다음의 첫 공백 위치를 찾습니다
+        // 이제 키와 값을 추출합니다. 값은 따옴표로 묶여 공백을 포함할 수 있습니다.
+        // 키 다음의 첫 공백 위치를 찾습니다
         size_t sp = i;
         while (sp < j && !isspace(static_cast<unsigned char>(s[sp]))) ++sp;
         if (sp == j)
@@ -219,7 +220,7 @@ bool GeneralParseUtils::CheckSimpleDirectives(const std::string &configPath)
             return false;
         }
 
-    // 값 시작까지 공백을 건너뜁니다
+        // 값 시작까지 공백을 건너뜁니다
         size_t k = sp;
         while (k < j && isspace(static_cast<unsigned char>(s[k]))) ++k;
         if (k >= j)
