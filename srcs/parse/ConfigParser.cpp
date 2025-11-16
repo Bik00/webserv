@@ -44,7 +44,6 @@ bool ConfigParser::validate(int argc, char **argv)
 bool ConfigParser::validateGeneral(int argc, char **argv)
 {
     GeneralParseUtils   generalUtils;
-    BlockParseUtils     blockUtils;
     bool                ret = true;
     std::string         configPath;
 
@@ -61,8 +60,14 @@ bool ConfigParser::validateGeneral(int argc, char **argv)
 
 bool ConfigParser::validateBlocks(char **argv)
 {
-    (void)argv;
-    return (true);
+    bool            ret = true;
+    BlockParseUtils blockUtils;
+
+    ret = blockUtils.CheckEventBlock(argv);
+    if (ret)
+        ret = blockUtils.CheckHttpBlock(argv);
+
+    return ret;
 }
 
 bool ConfigParser::setGeneral(char **argv, Config &config)
