@@ -22,3 +22,8 @@ HttpBlock &HttpBlock::operator=(const HttpBlock &ref)
 	return *this;
 }
 
+void HttpBlock::addServerBlock(const ServerBlock &sb)
+{
+	this->serverBlocks.push_back(sb);
+}
+

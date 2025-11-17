@@ -40,6 +40,11 @@ void Config::addEventBlock(const EventBlock &eventBlock)
     this->eventBlock = eventBlock;
 }
 
+void Config::addHttpBlock(const HttpBlock &httpBlock)
+{
+    this->httpBlock = httpBlock;
+}
+
 const std::string &Config::getConfigPath() const
 {
     return this->configPath;

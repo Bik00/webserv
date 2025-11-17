@@ -22,3 +22,8 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &ref)
 	return *this;
 }
 
+void ServerBlock::addLocationBlock(const LocationBlock &lb)
+{
+	this->locationBlocks.push_back(lb);
+}
+

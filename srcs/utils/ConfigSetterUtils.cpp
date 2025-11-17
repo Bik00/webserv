@@ -93,17 +93,18 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
 {
     GeneralParseUtils gparse;
     std::string body;
+    EventBlock eventBlock;
 
     if (!gparse.ReadBlockBody(is, body))
     {
         std::cerr << "Unbalanced braces in event block" << std::endl;
         return false;
     }
-    
+
     std::istringstream inner(body);
     std::string line;
     size_t lineno = 0;
-    EventBlock eb;
+
     while (std::getline(inner, line))
     {
         ++lineno;
@@ -119,33 +120,101 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
                 std::cerr << "Invalid worker_connections value in event block at line " << lineno << std::endl;
                 return false;
             }
-            eb.setWorkerConnections(v);
+            eventBlock.setWorkerConnections(v);
         }
     }
-    config.addEventBlock(eb);
+    config.addEventBlock(eventBlock);
     return true;
 }
 
 bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
 {
-    (void)config;
-    // consume block body until matching '}' using brace balance
-    char c;
-    int brace_balance = 1;
-    while (is.get(c))
-    {
-        if (c == '{') ++brace_balance;
-        else if (c == '}')
-        {
-            --brace_balance;
-            if (brace_balance == 0) break;
-        }
-    }
-    if (brace_balance != 0)
+    GeneralParseUtils gparse;
+    std::string body;
+    if (!gparse.ReadBlockBody(is, body))
     {
         std::cerr << "Unbalanced braces in http block" << std::endl;
         return false;
     }
+
+    std::istringstream inner(body);
+    std::string line;
+    HttpBlock hb;
+    while (std::getline(inner, line))
+    {
+        std::string s = gparse.ParseContext(line);
+        if (s.empty()) continue;
+        std::string blockName;
+        if (gparse.ParseBlockHeader(s, blockName))
+        {
+            if (blockName == "server")
+            {
+                if (!setServerBlock(inner, hb)) return false;
+            }
+            else
+            {
+                // unknown nested block inside http
+                return false;
+            }
+        }
+    }
+    config.addHttpBlock(hb);
+    return true;
+}
+
+bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
+{
+    GeneralParseUtils gparse;
+    std::string body;
+    if (!gparse.ReadBlockBody(is, body))
+    {
+        std::cerr << "Unbalanced braces in server block" << std::endl;
+        return false;
+    }
+    std::istringstream inner(body);
+    std::string line;
+    ServerBlock sb;
+    while (std::getline(inner, line))
+    {
+        std::string s = gparse.ParseContext(line);
+        if (s.empty()) continue;
+        std::string blockName;
+        if (gparse.ParseBlockHeader(s, blockName))
+        {
+            if (blockName == "location")
+            {
+                if (!setLocationBlock(inner, sb)) return false;
+            }
+            else
+            {
+                // unknown nested block inside server
+                return false;
+            }
+        }
+        else
+        {
+            // simple directives inside server are ignored for now
+            continue;
+        }
+    }
+    httpBlock.addServerBlock(sb);
+    return true;
+}
+
+bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBlock)
+{
+    GeneralParseUtils gparse;
+    std::string body;
+    if (!gparse.ReadBlockBody(is, body))
+    {
+        std::cerr << "Unbalanced braces in location block" << std::endl;
+        return false;
+    }
+    std::istringstream inner(body);
+    std::string line;
+    LocationBlock lb;
+    // For now we don't parse location directives; just attach the location block
+    serverBlock.addLocationBlock(lb);
     return true;
 }
 

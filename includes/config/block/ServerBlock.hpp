@@ -13,6 +13,7 @@ public:
     ~ServerBlock(void);
     ServerBlock(const ServerBlock &ref);
     ServerBlock &operator=(const ServerBlock &ref);
+    void addLocationBlock(const LocationBlock &lb);
 };
 
 #endif /* SERVER_BLOCK_HPP */

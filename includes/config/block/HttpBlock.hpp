@@ -13,6 +13,7 @@ public:
     ~HttpBlock(void);
     HttpBlock(const HttpBlock &ref);
     HttpBlock &operator=(const HttpBlock &ref);
+    void addServerBlock(const ServerBlock &sb);
 };
 
 #endif /* HTTP_BLOCK_HPP */
