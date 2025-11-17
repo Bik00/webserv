@@ -53,3 +53,49 @@ std::string GeneralParseUtils::ParseContext(const std::string &line)
     if (a >= b) return std::string();
     return s.substr(a, b - a);
 }
+
+bool GeneralParseUtils::ParseDirective(const std::string &line, std::string &key, std::string &value)
+{
+    // line is expected to be already processed by ParseContext (no comments, trimmed)
+    if (line.empty()) return false;
+    std::string s = line;
+    // strip trailing ';' if present
+    if (!s.empty() && s[s.size() - 1] == ';') s.erase(s.size() - 1);
+
+    size_t i = 0;
+    while (i < s.size() && isspace(static_cast<unsigned char>(s[i]))) ++i;
+    size_t j = s.size();
+    while (j > i && isspace(static_cast<unsigned char>(s[j-1]))) --j;
+    if (i >= j) return false;
+
+    size_t sp = i;
+    while (sp < j && !isspace(static_cast<unsigned char>(s[sp]))) ++sp;
+    if (sp == j) return false; // no value
+    key = s.substr(i, sp - i);
+
+    size_t k = sp;
+    while (k < j && isspace(static_cast<unsigned char>(s[k]))) ++k;
+    if (k >= j) return false;
+    value = s.substr(k, j - k);
+    return true;
+}
+
+bool GeneralParseUtils::ParseBlockHeader(const std::string &line, std::string &blockName)
+{
+    // line expected to be processed by ParseContext
+    if (line.empty()) return false;
+    // must end with '{'
+    size_t n = line.size();
+    if (line[n - 1] != '{') return false;
+    std::string header = line.substr(0, n - 1);
+    // trim
+    size_t h1 = 0;
+    while (h1 < header.size() && isspace(static_cast<unsigned char>(header[h1]))) ++h1;
+    size_t h2 = header.size();
+    while (h2 > h1 && isspace(static_cast<unsigned char>(header[h2-1]))) --h2;
+    if (h1 >= h2) return false;
+    size_t p = h1;
+    while (p < h2 && !isspace(static_cast<unsigned char>(header[p]))) ++p;
+    blockName = header.substr(h1, p - h1);
+    return true;
+}

@@ -2,6 +2,7 @@
 # define CONFIG_VALIDATOR_UTILS_HPP
 
 # include "../libs/Libs.hpp"
+# include "../config/Config.hpp"
 
 class ConfigValidatorUtils
 {

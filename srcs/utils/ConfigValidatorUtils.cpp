@@ -128,21 +128,9 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
         std::string s = gparse.ParseContext(line);
         if (s.empty()) continue;
 
-        if (s.size() >= 1 && s[s.size() - 1] == '{')
+        std::string blockName;
+        if (gparse.ParseBlockHeader(s, blockName))
         {
-            std::string header = s.substr(0, s.size() - 1);
-            size_t h1 = 0;
-            while (h1 < header.size() && isspace(static_cast<unsigned char>(header[h1]))) ++h1;
-            size_t h2 = header.size();
-            while (h2 > h1 && isspace(static_cast<unsigned char>(header[h2-1]))) --h2;
-            if (h1 >= h2)
-            {
-                std::cerr << "Empty block header before '{' at " << contextName << ":" << lineno << std::endl;
-                return false;
-            }
-            size_t p = h1;
-            while (p < h2 && !isspace(static_cast<unsigned char>(header[p]))) ++p;
-            std::string blockName = header.substr(h1, p - h1);
             if (!validateBlock(is, blockName))
                 return false;
             continue;
@@ -159,37 +147,13 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
             return true;
         }
 
-        if (s[s.size() - 1] != ';')
+        std::string key, value;
+        if (!gparse.ParseDirective(s, key, value))
         {
-            std::cerr << "Syntax error (missing ';') at " << contextName << ":" << lineno << std::endl;
+            std::cerr << "Invalid directive at " << contextName << ":" << lineno << std::endl;
             return false;
         }
-        s.erase(s.size() - 1);
-        size_t i = 0;
-        while (i < s.size() && isspace(static_cast<unsigned char>(s[i]))) ++i;
-        size_t j = s.size();
-        while (j > i && isspace(static_cast<unsigned char>(s[j-1]))) --j;
-        if (i >= j)
-        {
-            std::cerr << "Empty directive at " << contextName << ":" << lineno << std::endl;
-            return false;
-        }
-        size_t sp = i;
-        while (sp < j && !isspace(static_cast<unsigned char>(s[sp]))) ++sp;
-        if (sp == j)
-        {
-            std::cerr << "Directive has no value at " << contextName << ":" << lineno << std::endl;
-            return false;
-        }
-        size_t k = sp;
-        while (k < j && isspace(static_cast<unsigned char>(s[k]))) ++k;
-        if (k >= j)
-        {
-            std::cerr << "Directive has empty value at " << contextName << ":" << lineno << std::endl;
-            return false;
-        }
-        std::string key = s.substr(i, sp - i);
-        if (seenKeys.find(key) != seenKeys.end())
+    if (seenKeys.find(key) != seenKeys.end())
         {
             std::cerr << "Duplicate directive key '" << key << "' at " << contextName << ":" << lineno << std::endl;
             return false;
