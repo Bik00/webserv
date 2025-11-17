@@ -121,3 +121,20 @@ void ServerBlock::ensureDefaultListen()
 	}
 }
 
+void ServerBlock::setDefaultServer(bool def)
+{
+	if (def)
+	{
+		// ensure there is at least one listen addr, then mark the first as default
+		this->ensureDefaultListen();
+		if (!this->listenAddrs.empty())
+			this->listenAddrs[0].defaultServerFlag = true;
+	}
+	else
+	{
+		// clear default flag from all listen addrs
+		for (size_t i = 0; i < this->listenAddrs.size(); ++i)
+			this->listenAddrs[i].defaultServerFlag = false;
+	}
+}
+

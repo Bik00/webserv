@@ -221,6 +221,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
                     int p = parsed[i].second;
                     sb.addListen(h, p, defFlag);
                 }
+                if (defFlag) sb.setDefaultServer(true);
             }
             else if (key == "server_name")
             {
