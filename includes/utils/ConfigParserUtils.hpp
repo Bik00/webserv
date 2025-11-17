@@ -1,7 +1,7 @@
-#ifndef CONFIG_PARSER_HPP
-# define CONFIG_PARSER_HPP
+#ifndef CONFIG_PARSER_UTILS_HPP
+# define CONFIG_PARSER_UTILS_HPP
 
-# include "../parse/ConfigParser.hpp"
+# include "../libs/Libs.hpp"
 
 class ConfigParserUtils
 {
@@ -13,6 +13,6 @@ public:
 
     std::string CheckArgc(int argc, char **argv);
     bool ValidatePath(const std::string &configPath);
-}
+};
 
-#endif /* CONFIG_PARSER_HPP */
+#endif /* CONFIG_PARSER_UTILS_HPP */

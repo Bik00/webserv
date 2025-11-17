@@ -10,10 +10,12 @@ ConfigParserUtils::~ConfigParserUtils(void)
 
 ConfigParserUtils::ConfigParserUtils(const ConfigParserUtils &ref)
 {
+    (void)ref;
 }
 
 ConfigParserUtils &ConfigParserUtils::operator=(const ConfigParserUtils &ref)
 {
+    (void)ref;
     return *this;
 }
 

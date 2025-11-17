@@ -13,6 +13,9 @@ private:
 	bool validateBlocks(char **argv, Config &config);
 	bool setGeneral(char **argv, Config &config);
 	bool setBlocks(char **argv, Config &config);
+	bool setValue(char **argv, Config &config);
+	bool validateContext(std::istream &is, const std::string &contextName);
+	bool validateBlock(std::istream &is, const std::string &blockName);
 public:
 	ConfigParser(void);
 	~ConfigParser(void);
