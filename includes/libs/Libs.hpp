@@ -34,4 +34,17 @@
 
 # define DEFAULT_CONFIG_PATH "./config/default.conf";
 
+# define DEFAULT_WORKER_PROCESSES 1
+# define DEFAULT_WORKER_CONNECTIONS 1024
+# define DEFAULT_LISTEN_HOST "0.0.0.0"
+# define DEFAULT_LISTEN_PORT 80
+# define DEFAULT_ROOT "./www"
+# define DEFAULT_INDEX_FILE "index.html"
+# define DEFAULT_CLIENT_MAX_BODY_SIZE (1 * 1024 * 1024) // 1MB
+# define DEFAULT_ALLOWED_METHODS std::vector<std::string>({"GET", "POST", "DELETE"})
+
+// 기본 에러 페이지 경로 (프로젝트의 ./www/errors/*.html 사용)
+// 예: ./www/errors/404.html, ./www/errors/500.html 등
+# define DEFAULT_ERROR_PAGES_DIR "./www/errors"
+
 #endif /* LIBS_HPP */
