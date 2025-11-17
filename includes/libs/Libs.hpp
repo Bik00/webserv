@@ -50,4 +50,6 @@
 // 예: ./www/errors/404.html, ./www/errors/500.html 등
 # define DEFAULT_ERROR_PAGES_DIR "./www/errors"
 
+# define MAX_CLIENT_MAX_BODY_SIZE (10 * 1024 * 1024) // 10MB
+
 #endif /* LIBS_HPP */

@@ -50,3 +50,6 @@ bool HttpBlock::addServerBlock(const ServerBlock &sb)
 	return true;
 }
 
+// (error page helpers are provided by BaseBlock)
+
+

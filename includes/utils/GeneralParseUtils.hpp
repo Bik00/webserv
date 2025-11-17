@@ -17,6 +17,9 @@ public:
     bool ReadBlockBody(std::istream &is, std::string &body);
     bool ParsePositiveInt(const std::string &val, int &out);
     bool ParseListen(const std::string &token, std::string &outHost, int &outPort);
+    // parse strings like "100", "10k", "5M", "1G" into bytes (base 1024).
+    // returns -1 on error, otherwise number of bytes as long long.
+    long long CalcClientMaxBodySize(const std::string &s);
 };
 
 #endif /* GENERAL_PARSE_UTILS_HPP */

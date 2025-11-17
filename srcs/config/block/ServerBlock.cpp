@@ -2,13 +2,8 @@
 
 ServerBlock::ServerBlock(void)
 {
-	root = DEFAULT_ROOT;
 	serverNames.clear();
-	indexFiles.clear();
-	indexFiles.push_back(std::string(DEFAULT_INDEX_FILE));
-	errorPages.clear();
-	clientMaxBodySize = DEFAULT_CLIENT_MAX_BODY_SIZE;
-	autoindex = false;
+	// BaseBlock constructor initializes root/indexFiles/errorPages/clientMaxBodySize/autoindex
 }
 
 ServerBlock::~ServerBlock(void)
@@ -41,15 +36,6 @@ void ServerBlock::addLocationBlock(const LocationBlock &lb)
 	this->locationBlocks.push_back(lb);
 }
 
-void ServerBlock::addIndexFile(const std::string &f)
-{
-	this->indexFiles.push_back(f);
-}
-
-void ServerBlock::addErrorPage(int code, const std::string &path)
-{
-	this->errorPages[code] = path;
-}
 
 void ServerBlock::addServerName(const std::string &name)
 {

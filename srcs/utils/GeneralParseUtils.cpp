@@ -194,3 +194,53 @@ bool GeneralParseUtils::ParseListen(const std::string &token, std::string &outHo
     outPort = 0;
     return true;
 }
+
+// parse strings like "100", "10k", "5M", "1G" into bytes (base 1024).
+// returns -1 on error, otherwise number of bytes as long long.
+long long GeneralParseUtils::CalcClientMaxBodySize(const std::string &s)
+{
+    if (s.empty()) return -1;
+    // trim
+    size_t a = 0;
+    while (a < s.size() && isspace(static_cast<unsigned char>(s[a]))) ++a;
+    size_t b = s.size();
+    while (b > a && isspace(static_cast<unsigned char>(s[b-1]))) --b;
+    if (a >= b) return -1;
+    std::string t = s.substr(a, b - a);
+
+    // optional suffix
+    char suffix = '\0';
+    if (!t.empty())
+    {
+        char last = t[t.size() - 1];
+        if (last == 'k' || last == 'K' || last == 'm' || last == 'M' || last == 'g' || last == 'G')
+        {
+            suffix = last;
+            t = t.substr(0, t.size() - 1);
+            // trim again
+            size_t ta = 0;
+            while (ta < t.size() && isspace(static_cast<unsigned char>(t[ta]))) ++ta;
+            size_t tb = t.size();
+            while (tb > ta && isspace(static_cast<unsigned char>(t[tb-1]))) --tb;
+            if (ta >= tb) return -1;
+            t = t.substr(ta, tb - ta);
+        }
+    }
+
+    long long n = 0;
+    std::istringstream iss(t);
+    if (!(iss >> n)) return -1;
+    if (n <= 0) return -1;
+
+    long long mul = 1;
+    if (suffix != '\0')
+    {
+        if (suffix == 'k' || suffix == 'K') mul = 1024LL;
+        else if (suffix == 'm' || suffix == 'M') mul = 1024LL * 1024LL;
+        else if (suffix == 'g' || suffix == 'G') mul = 1024LL * 1024LL * 1024LL;
+    }
+
+    long long total = n * mul;
+    if (total <= 0) return -1;
+    return total;
+}

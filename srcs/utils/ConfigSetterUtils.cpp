@@ -1,5 +1,6 @@
 #include "../../includes/utils/ConfigSetterUtils.hpp"
 #include "../../includes/utils/GeneralParseUtils.hpp"
+#include "../../includes/libs/Libs.hpp"
 
 ConfigSetterUtils::ConfigSetterUtils(void)
 {
@@ -137,7 +138,6 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
         std::cerr << "Unbalanced braces in http block" << std::endl;
         return false;
     }
-
     std::istringstream inner(body);
     std::string line;
     HttpBlock hb;
@@ -156,6 +156,57 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
             {
                 // unknown nested block inside http
                 return false;
+            }
+        }
+        else
+        {
+            std::string key, val;
+            if (!gparse.ParseDirective(s, key, val)) continue;
+            if (key == "error_page")
+            {
+                // reuse server-level parsing logic: multiple codes then path
+                std::istringstream iss(val);
+                std::string token;
+                std::vector<int> codes;
+                std::string pathv;
+                while (iss >> token)
+                {
+                    bool isNumber = !token.empty();
+                    for (size_t i = 0; i < token.size() && isNumber; ++i)
+                        if (!std::isdigit(static_cast<unsigned char>(token[i]))) isNumber = false;
+                    if (isNumber)
+                    {
+                        int code = 0;
+                        std::istringstream ts(token);
+                        ts >> code;
+                        codes.push_back(code);
+                    }
+                    else
+                    {
+                        pathv = token;
+                        break;
+                    }
+                }
+                if (codes.empty() || pathv.empty())
+                {
+                    std::cerr << "Invalid error_page directive in http block" << std::endl;
+                    return false;
+                }
+                for (size_t i = 0; i < codes.size(); ++i)
+                {
+                    int c = codes[i];
+                    if (c < 400 || c > 599)
+                    {
+                        std::cerr << "Invalid error code in http error_page: " << c << std::endl;
+                        return false;
+                    }
+                    hb.addErrorPage(c, pathv);
+                }
+            }
+            else
+            {
+                // other http-level directives currently ignored
+                continue;
             }
         }
     }
@@ -245,19 +296,61 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
             }
             else if (key == "error_page")
             {
-                // syntax: error_page <code> <path>;
+                // syntax: error_page <code> <code> ... <path>;
                 std::istringstream iss(val);
-                int code;
+                std::string token;
+                std::vector<int> codes;
                 std::string pathv;
-                if (!(iss >> code >> pathv)) return false;
-                sb.addErrorPage(code, pathv);
+                while (iss >> token)
+                {
+                    bool isNumber = !token.empty();
+                    for (size_t i = 0; i < token.size() && isNumber; ++i)
+                        if (!std::isdigit(static_cast<unsigned char>(token[i]))) isNumber = false;
+                    if (isNumber)
+                    {
+                        int code = 0;
+                        std::istringstream ts(token);
+                        ts >> code;
+                        codes.push_back(code);
+                    }
+                    else
+                    {
+                        pathv = token;
+                        break;
+                    }
+                }
+                if (codes.empty() || pathv.empty())
+                {
+                    std::cerr << "Invalid error_page directive: need one or more codes and a path" << std::endl;
+                    return false;
+                }
+                // validate codes and add mappings
+                for (size_t i = 0; i < codes.size(); ++i)
+                {
+                    int c = codes[i];
+                    if (c < 400 || c > 599)
+                    {
+                        std::cerr << "Invalid error code in error_page: " << c << std::endl;
+                        return false;
+                    }
+                    sb.addErrorPage(c, pathv);
+                }
             }
             else if (key == "client_max_body_size")
             {
-                // accept plain integer bytes for now
-                int v = 0;
-                if (!gparse.ParsePositiveInt(val, v)) return false;
-                sb.setClientMaxBodySize(static_cast<size_t>(v));
+                // accept integer with optional k/K, m/M, g/G suffixes (base 1024)
+                long long parsed = gparse.CalcClientMaxBodySize(val);
+                if (parsed < 0)
+                {
+                    std::cerr << "Invalid client_max_body_size value: " << val << std::endl;
+                    return false;
+                }
+                if (parsed > MAX_CLIENT_MAX_BODY_SIZE)
+                {
+                    std::cerr << "client_max_body_size exceeds maximum allowed (" << MAX_CLIENT_MAX_BODY_SIZE << "): " << val << std::endl;
+                    return false;
+                }
+                sb.setClientMaxBodySize(static_cast<size_t>(parsed));
             }
             else if (key == "autoindex")
             {

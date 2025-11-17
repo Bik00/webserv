@@ -7,14 +7,12 @@ LocationBlock::LocationBlock(void)
 	hasRedirect = false;
 	redirectCode = 0;
 	redirectTarget = std::string();
-	root = std::string();
-	autoindex = false;
-	indexFiles.clear();
+	// BaseBlock constructor handles root/indexFiles/autoindex/clientMaxBodySize
 	cgiExtensions.clear();
 	cgiPath = std::string();
 	uploadEnable = false;
 	uploadStore = std::string();
-	clientMaxBodySize = 0;
+    
 }
 
 LocationBlock::~LocationBlock(void)
