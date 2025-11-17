@@ -8,10 +8,10 @@
 class Config
 {
 private:
-	std::vector<HttpBlock>	httpBlocks;
-	std::vector<EventBlock>	eventBlocks;
-	std::string				configPath;
-	int						workerProcesses;
+	std::string	configPath;
+	int			workerProcesses;
+	HttpBlock	httpBlock;
+	EventBlock	eventBlock;
 public:
 	Config(void);
 	~Config(void);
@@ -20,6 +20,7 @@ public:
 
 	void setConfigPath(const std::string &path);
 	void setWorkerProcesses(int num);
+	void addEventBlock(const EventBlock &eventBlock);
 
 	const std::string &getConfigPath() const;
 	int getWorkerProcesses() const;

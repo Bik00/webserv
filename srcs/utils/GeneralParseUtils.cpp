@@ -99,3 +99,38 @@ bool GeneralParseUtils::ParseBlockHeader(const std::string &line, std::string &b
     blockName = header.substr(h1, p - h1);
     return true;
 }
+
+bool GeneralParseUtils::ReadBlockBody(std::istream &is, std::string &body)
+{
+    body.clear();
+    char c;
+    int brace_balance = 1;
+    while (is.get(c))
+    {
+        if (c == '{')
+        {
+            ++brace_balance;
+            body.push_back(c);
+        }
+        else if (c == '}')
+        {
+            --brace_balance;
+            if (brace_balance == 0)
+                return true;
+            body.push_back(c);
+        }
+        else
+        {
+            body.push_back(c);
+        }
+    }
+    return false; // unbalanced
+}
+
+bool GeneralParseUtils::ParsePositiveInt(const std::string &val, int &out)
+{
+    std::istringstream iss(val);
+    if (!(iss >> out)) return false;
+    if (out <= 0) return false;
+    return true;
+}

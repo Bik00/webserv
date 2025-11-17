@@ -15,7 +15,19 @@ EventBlock::EventBlock(const EventBlock &ref)
 
 EventBlock &EventBlock::operator=(const EventBlock &ref)
 {
-	(void)ref;
+	if (this != &ref)
+	{
+		this->workerConnections = ref.workerConnections;
+	}
 	return *this;
 }
 
+void EventBlock::setWorkerConnections(int num)
+{
+	this->workerConnections = num;
+}
+
+int EventBlock::getWorkerConnections() const
+{
+	return this->workerConnections;
+}

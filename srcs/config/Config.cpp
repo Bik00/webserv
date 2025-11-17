@@ -17,8 +17,8 @@ Config &Config::operator=(const Config &ref)
 {
     if (this != &ref)
     {
-    this->httpBlocks = ref.httpBlocks;
-    this->eventBlocks = ref.eventBlocks;
+    this->httpBlock = ref.httpBlock;
+    this->eventBlock = ref.eventBlock;
     this->configPath = ref.configPath;
     this->workerProcesses = ref.workerProcesses;
     }
@@ -33,6 +33,11 @@ void Config::setConfigPath(const std::string &path)
 void Config::setWorkerProcesses(int num)
 {
     this->workerProcesses = num;
+}
+
+void Config::addEventBlock(const EventBlock &eventBlock)
+{
+    this->eventBlock = eventBlock;
 }
 
 const std::string &Config::getConfigPath() const
