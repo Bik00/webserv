@@ -6,7 +6,7 @@
 class EventBlock
 {
 private:
-    int workerConnections;
+    int workerConnections; // 이벤트 루프에서 허용할 최대 동시 연결 수
 public:
     EventBlock(void);
     ~EventBlock(void);

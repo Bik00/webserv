@@ -6,6 +6,19 @@
 class LocationBlock
 {
 private:
+    std::string                 path;
+    std::vector<std::string>    methods;
+    bool                        hasRedirect;
+    int                         redirectCode;
+    std::string                 redirectTarget;
+    std::string                 root;
+    bool                        autoindex;
+    std::vector<std::string>    indexFiles;
+    std::vector<std::string>    cgiExtensions;
+    std::string                 cgiPath;
+    bool                        uploadEnable;
+    std::string                 uploadStore;
+    size_t                      clientMaxBodySize;
 public:
     LocationBlock(void);
     ~LocationBlock(void);
