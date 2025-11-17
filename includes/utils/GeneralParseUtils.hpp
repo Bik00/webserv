@@ -16,6 +16,7 @@ public:
     bool ParseBlockHeader(const std::string &line, std::string &blockName);
     bool ReadBlockBody(std::istream &is, std::string &body);
     bool ParsePositiveInt(const std::string &val, int &out);
+    bool ParseListen(const std::string &token, std::string &outHost, int &outPort);
 };
 
 #endif /* GENERAL_PARSE_UTILS_HPP */

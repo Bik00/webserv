@@ -201,22 +201,25 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
             if (!gparse.ParseDirective(s, key, val)) continue;
             if (key == "listen")
             {
-                // listen can be "host:port" or just port
-                size_t colon = val.find(':');
-                if (colon != std::string::npos)
+                // listen may contain multiple tokens (e.g. "80 127.0.0.1:8080")
+                std::istringstream lss(val);
+                std::string token;
+                bool defFlag = false;
+                std::vector<std::pair<std::string,int> > parsed;
+                while (lss >> token)
                 {
-                    std::string host = val.substr(0, colon);
-                    std::string portstr = val.substr(colon + 1);
+                    // token could be 'default_server' as flag
+                    if (token == "default_server") { defFlag = true; continue; }
+                    std::string host;
                     int port = 0;
-                    if (!gparse.ParsePositiveInt(portstr, port)) return false;
-                    sb.setListenHost(host);
-                    sb.setListenPort(port);
+                    if (!gparse.ParseListen(token, host, port)) { std::cerr << "Invalid listen token: " << token << std::endl; return false; }
+                    parsed.push_back(std::make_pair(host, port));
                 }
-                else
+                for (size_t i = 0; i < parsed.size(); ++i)
                 {
-                    int port = 0;
-                    if (!gparse.ParsePositiveInt(val, port)) return false;
-                    sb.setListenPort(port);
+                    std::string h = parsed[i].first;
+                    int p = parsed[i].second;
+                    sb.addListen(h, p, defFlag);
                 }
             }
             else if (key == "server_name")
@@ -260,11 +263,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
                 if (val == "on") sb.setAutoindex(true);
                 else sb.setAutoindex(false);
             }
-            else if (key == "default_server")
-            {
-                if (val == "on" || val == "true" || val == "1") sb.setDefaultServer(true);
-                else sb.setDefaultServer(false);
-            }
+            
             else
             {
                 // unknown directive at server level -- ignore or extend later
@@ -272,7 +271,12 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
             }
         }
     }
-    httpBlock.addServerBlock(sb);
+    try {
+        if (!httpBlock.addServerBlock(sb)) return false;
+    } catch (const std::exception &e) {
+        std::cerr << "Configuration error: " << e.what() << std::endl;
+        return false;
+    }
     return true;
 }
 

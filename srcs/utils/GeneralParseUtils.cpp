@@ -134,3 +134,63 @@ bool GeneralParseUtils::ParsePositiveInt(const std::string &val, int &out)
     if (out <= 0) return false;
     return true;
 }
+
+bool GeneralParseUtils::ParseListen(const std::string &token, std::string &outHost, int &outPort)
+{
+    outHost.clear();
+    outPort = 0;
+    if (token.empty()) return false;
+
+    // (IPv6 bracket syntax intentionally not supported here)
+
+    // all digits -> port only
+    bool allDigits = true;
+    for (size_t i = 0; i < token.size(); ++i) if (!isdigit(static_cast<unsigned char>(token[i]))) { allDigits = false; break; }
+    if (allDigits)
+    {
+        int p = 0;
+        if (!ParsePositiveInt(token, p)) return false;
+        if (p <= 0 || p > 65535) return false;
+        outPort = p;
+        return true;
+    }
+
+    // host:port (single colon) or host-only
+    size_t colon = token.find(':');
+    if (colon != std::string::npos)
+    {
+        // reject ambiguous IPv6 without brackets
+        if (token.find(':', colon + 1) != std::string::npos) return false;
+        std::string hostPart = token.substr(0, colon);
+        std::string portPart = token.substr(colon + 1);
+        int p = 0;
+        if (!ParsePositiveInt(portPart, p)) return false;
+        if (p <= 0 || p > 65535) return false;
+        // try IPv4 validation, otherwise accept as hostname
+        struct in_addr a4;
+        if (inet_pton(AF_INET, hostPart.c_str(), &a4) == 1)
+        {
+            outHost = hostPart;
+            outPort = p;
+            return true;
+        }
+        // accept domain-like host
+        outHost = hostPart;
+        outPort = p;
+        return true;
+    }
+
+    // host-only: validate IPv4 or treat as hostname
+    struct in_addr a4;
+    if (inet_pton(AF_INET, token.c_str(), &a4) == 1)
+    {
+        outHost = token;
+        outPort = 0;
+        return true;
+    }
+    // if contains ':' assume invalid IPv6 literal without brackets
+    if (token.find(':') != std::string::npos) return false;
+    outHost = token; // domain name
+    outPort = 0;
+    return true;
+}
