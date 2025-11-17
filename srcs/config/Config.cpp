@@ -2,6 +2,7 @@
 
 Config::Config(void)
 {
+    workerProcesses = DEFAULT_WORKER_PROCESSES;
 }
 
 Config::~Config(void)

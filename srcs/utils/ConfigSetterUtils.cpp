@@ -25,7 +25,7 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
     GeneralParseUtils gparse;
     std::string line;
     size_t lineno = 0;
-    int workers = 1;
+    int workers = DEFAULT_WORKER_PROCESSES;
     bool ret = true;
 
     while (std::getline(is, line))
@@ -93,7 +93,7 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
 {
     GeneralParseUtils gparse;
     std::string body;
-    EventBlock eventBlock;
+    EventBlock eventBlock; // eventBlock initialized with DEFAULT_WORKER_CONNECTIONS
 
     if (!gparse.ReadBlockBody(is, body))
     {
@@ -123,6 +123,7 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
             eventBlock.setWorkerConnections(v);
         }
     }
+    // If parser never set workerConnections, EventBlock constructor already set DEFAULT_WORKER_CONNECTIONS
     config.addEventBlock(eventBlock);
     return true;
 }
@@ -165,15 +166,18 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
 bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
 {
     GeneralParseUtils gparse;
+    ServerBlock sb;
     std::string body;
+    std::string line;
+
     if (!gparse.ReadBlockBody(is, body))
     {
         std::cerr << "Unbalanced braces in server block" << std::endl;
         return false;
     }
+
     std::istringstream inner(body);
-    std::string line;
-    ServerBlock sb;
+
     while (std::getline(inner, line))
     {
         std::string s = gparse.ParseContext(line);
@@ -193,8 +197,79 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
         }
         else
         {
-            // simple directives inside server are ignored for now
-            continue;
+            std::string key, val;
+            if (!gparse.ParseDirective(s, key, val)) continue;
+            if (key == "listen")
+            {
+                // listen can be "host:port" or just port
+                size_t colon = val.find(':');
+                if (colon != std::string::npos)
+                {
+                    std::string host = val.substr(0, colon);
+                    std::string portstr = val.substr(colon + 1);
+                    int port = 0;
+                    if (!gparse.ParsePositiveInt(portstr, port)) return false;
+                    sb.setListenHost(host);
+                    sb.setListenPort(port);
+                }
+                else
+                {
+                    int port = 0;
+                    if (!gparse.ParsePositiveInt(val, port)) return false;
+                    sb.setListenPort(port);
+                }
+            }
+            else if (key == "server_name")
+            {
+                // server_name can have multiple names separated by spaces
+                std::istringstream iss(val);
+                std::string name;
+                while (iss >> name) sb.addServerName(name);
+            }
+            else if (key == "root")
+            {
+                sb.setRoot(val);
+            }
+            else if (key == "index")
+            {
+                // index may contain multiple files
+                std::istringstream iss(val);
+                std::vector<std::string> files;
+                std::string f;
+                while (iss >> f) files.push_back(f);
+                if (!files.empty()) sb.setIndexFiles(files);
+            }
+            else if (key == "error_page")
+            {
+                // syntax: error_page <code> <path>;
+                std::istringstream iss(val);
+                int code;
+                std::string pathv;
+                if (!(iss >> code >> pathv)) return false;
+                sb.addErrorPage(code, pathv);
+            }
+            else if (key == "client_max_body_size")
+            {
+                // accept plain integer bytes for now
+                int v = 0;
+                if (!gparse.ParsePositiveInt(val, v)) return false;
+                sb.setClientMaxBodySize(static_cast<size_t>(v));
+            }
+            else if (key == "autoindex")
+            {
+                if (val == "on") sb.setAutoindex(true);
+                else sb.setAutoindex(false);
+            }
+            else if (key == "default_server")
+            {
+                if (val == "on" || val == "true" || val == "1") sb.setDefaultServer(true);
+                else sb.setDefaultServer(false);
+            }
+            else
+            {
+                // unknown directive at server level -- ignore or extend later
+                continue;
+            }
         }
     }
     httpBlock.addServerBlock(sb);

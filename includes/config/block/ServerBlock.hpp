@@ -8,7 +8,7 @@ class ServerBlock
 {
 private:
     std::vector<LocationBlock>  locationBlocks; // 서버 내의 location 블록들
-    // server-level directives
+
     std::string                 listenHost; // 서버가 바인드할 호스트(예: 0.0.0.0)
     int                         listenPort; // 서버가 바인드할 포트
     bool                        defaultServer; // 기본 서버로 동작할지 여부
@@ -23,7 +23,19 @@ public:
     ~ServerBlock(void);
     ServerBlock(const ServerBlock &ref);
     ServerBlock &operator=(const ServerBlock &ref);
+
     void addLocationBlock(const LocationBlock &lb);
+    void addServerName(const std::string &name);
+    void addIndexFile(const std::string &f);
+    void addErrorPage(int code, const std::string &path);
+
+    void setListenHost(const std::string &host);
+    void setListenPort(int port);
+    void setDefaultServer(bool def);
+    void setRoot(const std::string &r);
+    void setIndexFiles(const std::vector<std::string> &files);
+    void setClientMaxBodySize(size_t size);
+    void setAutoindex(bool on);
 };
 
 #endif /* SERVER_BLOCK_HPP */

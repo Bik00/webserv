@@ -2,6 +2,7 @@
 
 EventBlock::EventBlock(void)
 {
+	workerConnections = DEFAULT_WORKER_CONNECTIONS;
 }
 
 EventBlock::~EventBlock(void)

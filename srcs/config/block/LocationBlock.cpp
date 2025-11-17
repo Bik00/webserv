@@ -23,19 +23,7 @@ LocationBlock::~LocationBlock(void)
 
 LocationBlock::LocationBlock(const LocationBlock &ref)
 {
-	path = ref.path;
-	methods = ref.methods;
-	hasRedirect = ref.hasRedirect;
-	redirectCode = ref.redirectCode;
-	redirectTarget = ref.redirectTarget;
-	root = ref.root;
-	autoindex = ref.autoindex;
-	indexFiles = ref.indexFiles;
-	cgiExtensions = ref.cgiExtensions;
-	cgiPath = ref.cgiPath;
-	uploadEnable = ref.uploadEnable;
-	uploadStore = ref.uploadStore;
-	clientMaxBodySize = ref.clientMaxBodySize;
+	*this = ref;
 }
 
 LocationBlock &LocationBlock::operator=(const LocationBlock &ref)
