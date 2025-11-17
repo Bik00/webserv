@@ -3,8 +3,7 @@
 
 # include "../libs/Libs.hpp"
 # include "../config/Config.hpp"
-# include "../utils/GeneralParseUtils.hpp"
-# include "../utils/BlockParseUtils.hpp"
+# include "../utils/ConfigParserUtils.hpp"
 
 class ConfigParser
 {
