@@ -13,6 +13,9 @@ public:
 
     std::string CheckArgc(int argc, char **argv);
     bool ValidatePath(const std::string &configPath);
+    // recursive validators for contexts/blocks
+    bool validateContext(std::istream &is, const std::string &contextName);
+    bool validateBlock(std::istream &is, const std::string &blockName);
 };
 
 #endif /* CONFIG_PARSER_UTILS_HPP */
