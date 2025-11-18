@@ -12,7 +12,7 @@ private:
     bool setServerBlock(std::istream &is, HttpBlock &httpBlock);
     bool setLocationBlock(std::istream &is, ServerBlock &serverBlock);
     // centralize parsing of BaseBlock-level directives (root, index, error_page, client_max_body_size, autoindex)
-    bool setBaseBlock(const std::string &key, const std::string &val, BaseBlock &bb, const std::string &context = "");
+    bool setBaseBlock(const std::string &key, const std::string &val, BaseBlock &bb);
 public:
     ConfigSetterUtils(void);
     ~ConfigSetterUtils(void);

@@ -21,7 +21,7 @@ ConfigSetterUtils &ConfigSetterUtils::operator=(const ConfigSetterUtils &ref)
 	return *this;
 }
 
-bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &val, BaseBlock &block, const std::string &context)
+bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &val, BaseBlock &block)
 {
     GeneralParseUtils gparse;
     
@@ -67,10 +67,7 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
         }
         if (codes.empty() || pathv.empty())
         {
-            if (!context.empty())
-                std::cerr << "Invalid error_page directive in " << context << " block: need one or more codes and a path -- got: '" << val << "'" << std::endl;
-            else
-                std::cerr << "Invalid error_page directive: need one or more codes and a path -- got: '" << val << "'" << std::endl;
+            std::cerr << "Invalid error_page directive: need one or more codes and a path" << std::endl;
             return false;
         }
         // validate codes and add mappings
@@ -262,8 +259,8 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
         {
             std::string key, val;
             if (!gparse.ParseDirective(s, key, val)) continue;
-            // try to apply BaseBlock directives first (context: http)
-            if (setBaseBlock(key, val, hb, "http")) continue;
+            // try to apply BaseBlock directives first
+            if (setBaseBlock(key, val, hb)) continue;
             // other http-level directives currently ignored
             continue;
         }
@@ -342,7 +339,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
             else
             {
                 // try to apply BaseBlock directives (root, index, error_page, client_max_body_size, autoindex)
-                if (setBaseBlock(key, val, sb, "server")) continue;
+                if (setBaseBlock(key, val, sb)) continue;
                 // unknown directive at server level -- ignore or extend later
                 continue;
             }
@@ -378,8 +375,8 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
         std::string key, val;
         if (!gparse.ParseDirective(s, key, val)) continue;
         
-    // try to apply BaseBlock directives first (context: location)
-    if (setBaseBlock(key, val, lb, "location")) continue;
+        // try to apply BaseBlock directives first
+        if (setBaseBlock(key, val, lb)) continue;
         
         // location-specific directives (methods, cgi, upload, redirect, etc.) can be added here later
         // for now, ignore unknown directives
