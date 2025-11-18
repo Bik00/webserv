@@ -21,6 +21,96 @@ ConfigSetterUtils &ConfigSetterUtils::operator=(const ConfigSetterUtils &ref)
 	return *this;
 }
 
+bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &val, BaseBlock &block)
+{
+    GeneralParseUtils gparse;
+    
+    if (key == "root")
+    {
+        block.setRoot(val);
+        return true;
+    }
+    else if (key == "index")
+    {
+        // index may contain multiple files
+        std::istringstream iss(val);
+        std::vector<std::string> files;
+        std::string f;
+        while (iss >> f) files.push_back(f);
+        if (!files.empty()) block.setIndexFiles(files);
+        return true;
+    }
+    else if (key == "error_page")
+    {
+        // syntax: error_page <code> <code> ... <path>;
+        std::istringstream iss(val);
+        std::string token;
+        std::vector<int> codes;
+        std::string pathv;
+        while (iss >> token)
+        {
+            bool isNumber = !token.empty();
+            for (size_t i = 0; i < token.size() && isNumber; ++i)
+                if (!std::isdigit(static_cast<unsigned char>(token[i]))) isNumber = false;
+            if (isNumber)
+            {
+                int code = 0;
+                std::istringstream ts(token);
+                ts >> code;
+                codes.push_back(code);
+            }
+            else
+            {
+                pathv = token;
+                break;
+            }
+        }
+        if (codes.empty() || pathv.empty())
+        {
+            std::cerr << "Invalid error_page directive: need one or more codes and a path" << std::endl;
+            return false;
+        }
+        // validate codes and add mappings
+        for (size_t i = 0; i < codes.size(); ++i)
+        {
+            int c = codes[i];
+            if (c < 400 || c > 599)
+            {
+                std::cerr << "Invalid error code in error_page: " << c << std::endl;
+                return false;
+            }
+            block.addErrorPage(c, pathv);
+        }
+        return true;
+    }
+    else if (key == "client_max_body_size")
+    {
+        // accept integer with optional k/K, m/M, g/G suffixes (base 1024)
+        long long parsed = gparse.CalcClientMaxBodySize(val);
+        if (parsed < 0)
+        {
+            std::cerr << "Invalid client_max_body_size value: " << val << std::endl;
+            return false;
+        }
+        if (parsed > MAX_CLIENT_MAX_BODY_SIZE)
+        {
+            std::cerr << "client_max_body_size exceeds maximum allowed (" << MAX_CLIENT_MAX_BODY_SIZE << "): " << val << std::endl;
+            return false;
+        }
+        block.setClientMaxBodySize(static_cast<size_t>(parsed));
+        return true;
+    }
+    else if (key == "autoindex")
+    {
+        if (val == "on") block.setAutoindex(true);
+        else block.setAutoindex(false);
+        return true;
+    }
+    
+    // not a BaseBlock directive
+    return false;
+}
+
 bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
 {
     GeneralParseUtils gparse;
@@ -162,52 +252,10 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
         {
             std::string key, val;
             if (!gparse.ParseDirective(s, key, val)) continue;
-            if (key == "error_page")
-            {
-                // reuse server-level parsing logic: multiple codes then path
-                std::istringstream iss(val);
-                std::string token;
-                std::vector<int> codes;
-                std::string pathv;
-                while (iss >> token)
-                {
-                    bool isNumber = !token.empty();
-                    for (size_t i = 0; i < token.size() && isNumber; ++i)
-                        if (!std::isdigit(static_cast<unsigned char>(token[i]))) isNumber = false;
-                    if (isNumber)
-                    {
-                        int code = 0;
-                        std::istringstream ts(token);
-                        ts >> code;
-                        codes.push_back(code);
-                    }
-                    else
-                    {
-                        pathv = token;
-                        break;
-                    }
-                }
-                if (codes.empty() || pathv.empty())
-                {
-                    std::cerr << "Invalid error_page directive in http block" << std::endl;
-                    return false;
-                }
-                for (size_t i = 0; i < codes.size(); ++i)
-                {
-                    int c = codes[i];
-                    if (c < 400 || c > 599)
-                    {
-                        std::cerr << "Invalid error code in http error_page: " << c << std::endl;
-                        return false;
-                    }
-                    hb.addErrorPage(c, pathv);
-                }
-            }
-            else
-            {
-                // other http-level directives currently ignored
-                continue;
-            }
+            // try to apply BaseBlock directives first
+            if (setBaseBlock(key, val, hb)) continue;
+            // other http-level directives currently ignored
+            continue;
         }
     }
     config.addHttpBlock(hb);
@@ -281,85 +329,10 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
                 std::string name;
                 while (iss >> name) sb.addServerName(name);
             }
-            else if (key == "root")
-            {
-                sb.setRoot(val);
-            }
-            else if (key == "index")
-            {
-                // index may contain multiple files
-                std::istringstream iss(val);
-                std::vector<std::string> files;
-                std::string f;
-                while (iss >> f) files.push_back(f);
-                if (!files.empty()) sb.setIndexFiles(files);
-            }
-            else if (key == "error_page")
-            {
-                // syntax: error_page <code> <code> ... <path>;
-                std::istringstream iss(val);
-                std::string token;
-                std::vector<int> codes;
-                std::string pathv;
-                while (iss >> token)
-                {
-                    bool isNumber = !token.empty();
-                    for (size_t i = 0; i < token.size() && isNumber; ++i)
-                        if (!std::isdigit(static_cast<unsigned char>(token[i]))) isNumber = false;
-                    if (isNumber)
-                    {
-                        int code = 0;
-                        std::istringstream ts(token);
-                        ts >> code;
-                        codes.push_back(code);
-                    }
-                    else
-                    {
-                        pathv = token;
-                        break;
-                    }
-                }
-                if (codes.empty() || pathv.empty())
-                {
-                    std::cerr << "Invalid error_page directive: need one or more codes and a path" << std::endl;
-                    return false;
-                }
-                // validate codes and add mappings
-                for (size_t i = 0; i < codes.size(); ++i)
-                {
-                    int c = codes[i];
-                    if (c < 400 || c > 599)
-                    {
-                        std::cerr << "Invalid error code in error_page: " << c << std::endl;
-                        return false;
-                    }
-                    sb.addErrorPage(c, pathv);
-                }
-            }
-            else if (key == "client_max_body_size")
-            {
-                // accept integer with optional k/K, m/M, g/G suffixes (base 1024)
-                long long parsed = gparse.CalcClientMaxBodySize(val);
-                if (parsed < 0)
-                {
-                    std::cerr << "Invalid client_max_body_size value: " << val << std::endl;
-                    return false;
-                }
-                if (parsed > MAX_CLIENT_MAX_BODY_SIZE)
-                {
-                    std::cerr << "client_max_body_size exceeds maximum allowed (" << MAX_CLIENT_MAX_BODY_SIZE << "): " << val << std::endl;
-                    return false;
-                }
-                sb.setClientMaxBodySize(static_cast<size_t>(parsed));
-            }
-            else if (key == "autoindex")
-            {
-                if (val == "on") sb.setAutoindex(true);
-                else sb.setAutoindex(false);
-            }
-            
             else
             {
+                // try to apply BaseBlock directives (root, index, error_page, client_max_body_size, autoindex)
+                if (setBaseBlock(key, val, sb)) continue;
                 // unknown directive at server level -- ignore or extend later
                 continue;
             }
@@ -386,7 +359,23 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
     std::istringstream inner(body);
     std::string line;
     LocationBlock lb;
-    // For now we don't parse location directives; just attach the location block
+    
+    while (std::getline(inner, line))
+    {
+        std::string s = gparse.ParseContext(line);
+        if (s.empty()) continue;
+        
+        std::string key, val;
+        if (!gparse.ParseDirective(s, key, val)) continue;
+        
+        // try to apply BaseBlock directives first
+        if (setBaseBlock(key, val, lb)) continue;
+        
+        // location-specific directives (methods, cgi, upload, redirect, etc.) can be added here later
+        // for now, ignore unknown directives
+        continue;
+    }
+    
     serverBlock.addLocationBlock(lb);
     return true;
 }

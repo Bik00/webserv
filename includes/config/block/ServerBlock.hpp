@@ -30,10 +30,7 @@ public:
     void clearListenAddrs();
     void ensureDefaultListen();
     void setDefaultServer(bool def);
-    void setRoot(const std::string &r);
-    void setIndexFiles(const std::vector<std::string> &files);
-    void setClientMaxBodySize(size_t size);
-    void setAutoindex(bool on);
+    // use BaseBlock::setRoot/setIndexFiles/setClientMaxBodySize/setAutoindex
 };
 
 #endif /* SERVER_BLOCK_HPP */

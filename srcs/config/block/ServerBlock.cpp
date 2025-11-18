@@ -19,14 +19,10 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &ref)
 {
 	if (this != &ref)
 	{
-		this->locationBlocks = ref.locationBlocks;
-		this->listenAddrs = ref.listenAddrs;
-		this->serverNames = ref.serverNames;
-		this->root = ref.root;
-		this->indexFiles = ref.indexFiles;
-		this->errorPages = ref.errorPages;
-		this->clientMaxBodySize = ref.clientMaxBodySize;
-		this->autoindex = ref.autoindex;
+	this->locationBlocks = ref.locationBlocks;
+	this->listenAddrs = ref.listenAddrs;
+	this->serverNames = ref.serverNames;
+	BaseBlock::operator=(ref);
 	}
 	return *this;
 }
@@ -40,26 +36,6 @@ void ServerBlock::addLocationBlock(const LocationBlock &lb)
 void ServerBlock::addServerName(const std::string &name)
 {
 	this->serverNames.push_back(name);
-}
-
-void ServerBlock::setRoot(const std::string &r)
-{
-	this->root = r;
-}
-
-void ServerBlock::setIndexFiles(const std::vector<std::string> &files)
-{
-	this->indexFiles = files;
-}
-
-void ServerBlock::setClientMaxBodySize(size_t size)
-{
-	this->clientMaxBodySize = size;
-}
-
-void ServerBlock::setAutoindex(bool on)
-{
-	this->autoindex = on;
 }
 
 void ServerBlock::addListen(const std::string &host, int port, bool def)

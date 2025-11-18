@@ -33,14 +33,12 @@ LocationBlock &LocationBlock::operator=(const LocationBlock &ref)
 	hasRedirect = ref.hasRedirect;
 	redirectCode = ref.redirectCode;
 	redirectTarget = ref.redirectTarget;
-	root = ref.root;
-	autoindex = ref.autoindex;
-	indexFiles = ref.indexFiles;
+	// delegate base fields to BaseBlock
+	BaseBlock::operator=(ref);
 	cgiExtensions = ref.cgiExtensions;
 	cgiPath = ref.cgiPath;
 	uploadEnable = ref.uploadEnable;
 	uploadStore = ref.uploadStore;
-	clientMaxBodySize = ref.clientMaxBodySize;
 	return *this;
 }
 
