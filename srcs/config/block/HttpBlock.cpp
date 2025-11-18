@@ -50,6 +50,11 @@ bool HttpBlock::addServerBlock(const ServerBlock &sb)
 	return true;
 }
 
+const std::vector<ServerBlock> &HttpBlock::getServerBlocks() const
+{
+	return this->serverBlocks;
+}
+
 // (error page helpers are provided by BaseBlock)
 
 

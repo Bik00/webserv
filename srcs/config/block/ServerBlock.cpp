@@ -66,6 +66,16 @@ const std::vector<ListenAddr> &ServerBlock::getListenAddrs() const
 	return this->listenAddrs;
 }
 
+const std::vector<LocationBlock> &ServerBlock::getLocationBlocks() const
+{
+	return this->locationBlocks;
+}
+
+const std::vector<std::string> &ServerBlock::getServerNames() const
+{
+	return this->serverNames;
+}
+
 void ServerBlock::clearListenAddrs()
 {
 	this->listenAddrs.clear();

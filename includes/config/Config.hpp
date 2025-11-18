@@ -25,6 +25,7 @@ public:
 
 	const std::string &getConfigPath() const;
 	int getWorkerProcesses() const;
+	void printConfig() const;
 };
 
 #endif /* SERVER_CONFIG_HPP */

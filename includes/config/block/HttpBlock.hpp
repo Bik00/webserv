@@ -15,6 +15,7 @@ public:
     HttpBlock(const HttpBlock &ref);
     HttpBlock &operator=(const HttpBlock &ref);
     bool addServerBlock(const ServerBlock &sb);
+    const std::vector<ServerBlock> &getServerBlocks() const;
     // BaseBlock provides addErrorPage/getErrorPages
 };
 

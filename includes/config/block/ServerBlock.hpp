@@ -27,6 +27,8 @@ public:
     // listen management
     void addListen(const std::string &host, int port, bool def=false);
     const std::vector<ListenAddr> &getListenAddrs() const;
+    const std::vector<LocationBlock> &getLocationBlocks() const;
+    const std::vector<std::string> &getServerNames() const;
     void clearListenAddrs();
     void ensureDefaultListen();
     void setDefaultServer(bool def);

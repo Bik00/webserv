@@ -28,5 +28,7 @@ bool ConfigParser::Parse(int argc, char **argv, Config &config)
     ret = validatorUtils.Validate(argc, argv, config);
     if (ret)
         ret = setterUtils.SetValue(argv, config);
+    if (ret)
+        config.printConfig();
     return (ret);
 }
