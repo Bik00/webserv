@@ -8,6 +8,7 @@ BaseBlock::BaseBlock(void)
     errorPages.clear();
     clientMaxBodySize = DEFAULT_CLIENT_MAX_BODY_SIZE;
     autoindex = false;
+    allowedMethods.clear();
 }
 
 BaseBlock::~BaseBlock(void)
@@ -28,6 +29,7 @@ BaseBlock &BaseBlock::operator=(const BaseBlock &ref)
         this->errorPages = ref.errorPages;
         this->clientMaxBodySize = ref.clientMaxBodySize;
         this->autoindex = ref.autoindex;
+    this->allowedMethods = ref.allowedMethods;
     }
     return *this;
 }
@@ -62,6 +64,16 @@ void BaseBlock::setAutoindex(bool on)
     this->autoindex = on;
 }
 
+void BaseBlock::setAllowedMethods(const std::vector<std::string> &methods)
+{
+    this->allowedMethods = methods;
+}
+
+void BaseBlock::addAllowedMethod(const std::string &method)
+{
+    this->allowedMethods.push_back(method);
+}
+
 const std::map<int, std::string> &BaseBlock::getErrorPages() const
 {
     return this->errorPages;
@@ -85,4 +97,9 @@ size_t BaseBlock::getClientMaxBodySize() const
 bool BaseBlock::getAutoindex() const
 {
     return this->autoindex;
+}
+
+const std::vector<std::string> &BaseBlock::getAllowedMethods() const
+{
+    return this->allowedMethods;
 }

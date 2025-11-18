@@ -1,6 +1,7 @@
 #include "../../includes/utils/ConfigSetterUtils.hpp"
 #include "../../includes/utils/GeneralParseUtils.hpp"
 #include "../../includes/libs/Libs.hpp"
+#include <cctype>
 
 ConfigSetterUtils::ConfigSetterUtils(void)
 {
@@ -391,6 +392,57 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
     {
         std::string s = gparse.ParseContext(line);
         if (s.empty()) continue;
+        // Support nested block: limit_except METHOD ... { deny all; }
+        std::string blockName;
+        if (gparse.ParseBlockHeader(s, blockName))
+        {
+            if (blockName == "limit_except")
+            {
+                // Extract methods between 'limit_except' and '{'
+                std::string::size_type pos = s.find("limit_except");
+                if (pos == std::string::npos)
+                    throw std::runtime_error("Malformed limit_except header");
+                pos += std::string("limit_except").size();
+                std::string::size_type brace = s.find('{', pos);
+                if (brace == std::string::npos)
+                    throw std::runtime_error("Malformed limit_except header: missing '{'");
+                std::string methodsStr = s.substr(pos, brace - pos);
+                std::istringstream mss(methodsStr);
+                std::vector<std::string> methods;
+                std::string m;
+                while (mss >> m)
+                {
+                    bool ok = true;
+                    for (size_t i = 0; i < m.size(); ++i)
+                    {
+                        unsigned char ch = static_cast<unsigned char>(m[i]);
+                        if (!std::isupper(ch)) { ok = false; break; }
+                    }
+                    if (!ok)
+                    {
+                        std::ostringstream err; err << "Invalid method token in limit_except: '" << m << "'";
+                        throw std::runtime_error(err.str());
+                    }
+                    methods.push_back(m);
+                }
+                if (methods.empty())
+                    throw std::runtime_error("limit_except requires one or more methods");
+                lb.setAllowedMethods(methods);
+
+                // Read and validate inner body
+                std::string innerBody;
+                if (!gparse.ReadBlockBody(inner, innerBody))
+                    throw std::runtime_error("Unbalanced braces in limit_except block");
+                if (innerBody.find("deny") == std::string::npos || innerBody.find("all") == std::string::npos)
+                    throw std::runtime_error("limit_except body must contain 'deny all;' in this implementation");
+                continue;
+            }
+            else
+            {
+                std::ostringstream err; err << "Unknown nested block inside location: '" << blockName << "'";
+                throw std::runtime_error(err.str());
+            }
+        }
         
         std::string key, val;
         if (!gparse.ParseDirective(s, key, val)) continue;
@@ -399,8 +451,36 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
         setBaseBlock(key, val, lb);
         if (hasError) return false; // stop on first error
         
-        // location-specific directives (methods, cgi, upload, redirect, etc.) can be added here later
-        // for now, ignore unknown directives
+        // location-specific directives
+        if (key == "upload_store")
+        {
+            if (val.empty()) throw std::runtime_error("upload_store requires a directory");
+            lb.setUploadStore(val);
+            continue;
+        }
+        else if (key == "cgi_pass")
+        {
+            if (val.empty()) throw std::runtime_error("cgi_pass requires a path");
+            lb.setCgiPath(val);
+            continue;
+        }
+        else if (key == "return")
+        {
+            // expected: return <code> <target>;
+            std::istringstream rss(val);
+            std::string codeStr, target;
+            if (!(rss >> codeStr)) throw std::runtime_error("return requires status code and target");
+            if (!(rss >> target)) throw std::runtime_error("return requires target after status code");
+            int code = 0; { std::istringstream cs(codeStr); cs >> code; }
+            if (code < 300 || code >= 400)
+            {
+                std::ostringstream err; err << "Invalid redirect status code: " << code;
+                throw std::runtime_error(err.str());
+            }
+            lb.setRedirect(code, target);
+            continue;
+        }
+        // ignore unknown directives
         continue;
     }
     

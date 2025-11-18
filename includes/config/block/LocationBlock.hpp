@@ -23,6 +23,36 @@ public:
     ~LocationBlock(void);
     LocationBlock(const LocationBlock &ref);
     LocationBlock &operator=(const LocationBlock &ref);
+
+    // path
+    void setPath(const std::string &p);
+    const std::string &getPath() const;
+
+    // methods (location-level; may be superseded by BaseBlock::allowedMethods usage)
+    void setMethods(const std::vector<std::string> &m);
+    void addMethod(const std::string &m);
+    const std::vector<std::string> &getMethods() const;
+
+    // redirect
+    void setRedirect(int code, const std::string &target);
+    void clearRedirect();
+    bool getHasRedirect() const;
+    int getRedirectCode() const;
+    const std::string &getRedirectTarget() const;
+
+    // CGI
+    void setCgiPath(const std::string &path);
+    const std::string &getCgiPath() const;
+    void setCgiExtensions(const std::vector<std::string> &exts);
+    void addCgiExtension(const std::string &ext);
+    const std::vector<std::string> &getCgiExtensions() const;
+    bool hasCgi() const;
+
+    // upload
+    void enableUpload(bool on);
+    bool isUploadEnabled() const;
+    void setUploadStore(const std::string &dir);
+    const std::string &getUploadStore() const;
 };
 
 #endif /* LOCATION_BLOCK_HPP */
