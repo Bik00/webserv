@@ -4,6 +4,7 @@
 
 ConfigSetterUtils::ConfigSetterUtils(void)
 {
+	hasError = false;
 }
 
 ConfigSetterUtils::~ConfigSetterUtils(void)
@@ -67,7 +68,10 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
         }
         if (codes.empty() || pathv.empty())
         {
-            std::cerr << "Invalid error_page directive: need one or more codes and a path" << std::endl;
+            if (!hasError)
+            {
+                throw std::runtime_error(std::string("Invalid error_page directive: need one or more codes and a path"));
+            }
             return false;
         }
         // validate codes and add mappings
@@ -76,7 +80,12 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
             int c = codes[i];
             if (c < 400 || c > 599)
             {
-                std::cerr << "Invalid error code in error_page: " << c << std::endl;
+                if (!hasError)
+                {
+                    std::ostringstream ss;
+                    ss << "Invalid error code in error_page: " << c;
+                    throw std::runtime_error(ss.str());
+                }
                 return false;
             }
             block.addErrorPage(c, pathv);
@@ -89,12 +98,20 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
         long long parsed = gparse.CalcClientMaxBodySize(val);
         if (parsed < 0)
         {
-            std::cerr << "Invalid client_max_body_size value: " << val << std::endl;
+            if (!hasError)
+            {
+                throw std::runtime_error(std::string("Invalid client_max_body_size value: ") + val);
+            }
             return false;
         }
         if (parsed > MAX_CLIENT_MAX_BODY_SIZE)
         {
-            std::cerr << "client_max_body_size exceeds maximum allowed (" << MAX_CLIENT_MAX_BODY_SIZE << "): " << val << std::endl;
+            if (!hasError)
+            {
+                std::ostringstream ss;
+                ss << "client_max_body_size exceeds maximum allowed (" << MAX_CLIENT_MAX_BODY_SIZE << "): " << val;
+                throw std::runtime_error(ss.str());
+            }
             return false;
         }
         block.setClientMaxBodySize(static_cast<size_t>(parsed));
@@ -108,7 +125,12 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
             block.setAutoindex(false);
         else
         {
-            std::cerr << "Invalid autoindex value: '" << val << "' (must be 'on' or 'off')" << std::endl;
+            if (!hasError)
+            {
+                std::ostringstream ss;
+                ss << "Invalid autoindex value: '" << val << "' (must be 'on' or 'off')";
+                throw std::runtime_error(ss.str());
+            }
             return false;
         }
         return true;
@@ -154,17 +176,17 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
 
         if (s == "{" )
         {
-            std::cerr << "Unexpected '{' alone at global:" << lineno << std::endl;
-            ret = false;
-            break;
+            std::ostringstream ss;
+            ss << "Unexpected '{' alone at global:" << lineno;
+            throw std::runtime_error(ss.str());
         }
 
         if (s == "}")
         {
             // end of a higher-level block; in global context treat as error
-            std::cerr << "Unexpected '}' at global:" << lineno << std::endl;
-            ret = false;
-            break;
+            std::ostringstream ss;
+            ss << "Unexpected '}' at global:" << lineno;
+            throw std::runtime_error(ss.str());
         }
 
         std::string key, val;
@@ -174,9 +196,9 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
             int v = 0;
             if (!gparse.ParsePositiveInt(val, v))
             {
-                std::cerr << "Invalid worker_processes value at global:" << lineno << std::endl;
-                ret = false;
-                break;
+                std::ostringstream ss;
+                ss << "Invalid worker_processes value at global:" << lineno;
+                throw std::runtime_error(ss.str());
             }
             workers = v;
         }
@@ -195,8 +217,7 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
 
     if (!gparse.ReadBlockBody(is, body))
     {
-        std::cerr << "Unbalanced braces in event block" << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Unbalanced braces in event block"));
     }
 
     std::istringstream inner(body);
@@ -213,11 +234,12 @@ bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
         if (key == "worker_connections")
         {
             int v = 0;
-            if (!gparse.ParsePositiveInt(val, v))
-            {
-                std::cerr << "Invalid worker_connections value in event block at line " << lineno << std::endl;
-                return false;
-            }
+                if (!gparse.ParsePositiveInt(val, v))
+                {
+                    std::ostringstream ss;
+                    ss << "Invalid worker_connections value in event block at line " << lineno;
+                    throw std::runtime_error(ss.str());
+                }
             eventBlock.setWorkerConnections(v);
         }
     }
@@ -232,8 +254,7 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
     std::string body;
     if (!gparse.ReadBlockBody(is, body))
     {
-        std::cerr << "Unbalanced braces in http block" << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Unbalanced braces in http block"));
     }
     std::istringstream inner(body);
     std::string line;
@@ -260,7 +281,8 @@ bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)
             std::string key, val;
             if (!gparse.ParseDirective(s, key, val)) continue;
             // try to apply BaseBlock directives first
-            if (setBaseBlock(key, val, hb)) continue;
+            setBaseBlock(key, val, hb);
+            if (hasError) return false; // stop on first error
             // other http-level directives currently ignored
             continue;
         }
@@ -278,8 +300,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
 
     if (!gparse.ReadBlockBody(is, body))
     {
-        std::cerr << "Unbalanced braces in server block" << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Unbalanced braces in server block"));
     }
 
     std::istringstream inner(body);
@@ -318,7 +339,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
                     if (token == "default_server") { defFlag = true; continue; }
                     std::string host;
                     int port = 0;
-                    if (!gparse.ParseListen(token, host, port)) { std::cerr << "Invalid listen token: " << token << std::endl; return false; }
+                    if (!gparse.ParseListen(token, host, port)) { std::ostringstream ss; ss << "Invalid listen token: " << token; throw std::runtime_error(ss.str()); }
                     parsed.push_back(std::make_pair(host, port));
                 }
                 for (size_t i = 0; i < parsed.size(); ++i)
@@ -339,7 +360,8 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
             else
             {
                 // try to apply BaseBlock directives (root, index, error_page, client_max_body_size, autoindex)
-                if (setBaseBlock(key, val, sb)) continue;
+                setBaseBlock(key, val, sb);
+                if (hasError) return false; // stop on first error
                 // unknown directive at server level -- ignore or extend later
                 continue;
             }
@@ -348,8 +370,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
     try {
         if (!httpBlock.addServerBlock(sb)) return false;
     } catch (const std::exception &e) {
-        std::cerr << "Configuration error: " << e.what() << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Configuration error: ") + e.what());
     }
     return true;
 }
@@ -360,8 +381,7 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
     std::string body;
     if (!gparse.ReadBlockBody(is, body))
     {
-        std::cerr << "Unbalanced braces in location block" << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Unbalanced braces in location block"));
     }
     std::istringstream inner(body);
     std::string line;
@@ -376,7 +396,8 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
         if (!gparse.ParseDirective(s, key, val)) continue;
         
         // try to apply BaseBlock directives first
-        if (setBaseBlock(key, val, lb)) continue;
+        setBaseBlock(key, val, lb);
+        if (hasError) return false; // stop on first error
         
         // location-specific directives (methods, cgi, upload, redirect, etc.) can be added here later
         // for now, ignore unknown directives
@@ -394,8 +415,7 @@ bool ConfigSetterUtils::SetValue(char **argv, Config &config)
     std::ifstream ifs(path.c_str());
     if (!ifs)
     {
-        std::cerr << "Could not open config file: " << path << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Could not open config file: ") + path);
     }
 
     bool ret = setGlobalValue(ifs, config);

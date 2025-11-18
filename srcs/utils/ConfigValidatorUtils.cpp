@@ -1,5 +1,6 @@
 #include "../../includes/utils/ConfigValidatorUtils.hpp"
 #include "../../includes/utils/GeneralParseUtils.hpp"
+#include "../../includes/libs/Libs.hpp"
 
 ConfigValidatorUtils::ConfigValidatorUtils(void)
 {
@@ -28,8 +29,7 @@ bool ConfigValidatorUtils::Validate(int argc, char **argv, Config &config)
     std::ifstream ifs(path.c_str());
     if (!ifs)
     {
-        std::cerr << "Could not open config file: " << path << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Could not open config file: ") + path);
     }
     return validateContext(ifs, "global");
 }
@@ -73,8 +73,7 @@ bool ConfigValidatorUtils::validatePath(const std::string &configPath)
 
     if (comps.empty())
     {
-        std::cerr << "Invalid config path: " << configPath << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Invalid config path: ") + configPath);
     }
 
     std::string cur;
@@ -88,8 +87,7 @@ bool ConfigValidatorUtils::validatePath(const std::string &configPath)
         struct stat st;
         if (stat(cur.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
         {
-            std::cerr << "Directory not found: " << cur << std::endl;
-            return false;
+            throw std::runtime_error(std::string("Directory not found: ") + cur);
         }
     }
 
@@ -101,15 +99,13 @@ bool ConfigValidatorUtils::validatePath(const std::string &configPath)
     std::string last = comps.back();
     if (last.size() < 5 || last.substr(last.size() - 5) != ".conf")
     {
-        std::cerr << "Config file must end with .conf: " << last << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Config file must end with .conf: ") + last);
     }
 
     struct stat fst;
     if (stat(filePath.c_str(), &fst) != 0 || !S_ISREG(fst.st_mode))
     {
-        std::cerr << "Config file not found: " << filePath << std::endl;
-        return false;
+        throw std::runtime_error(std::string("Config file not found: ") + filePath);
     }
     return true;
 }
@@ -144,8 +140,9 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
 
         if (s == "{")
         {
-            std::cerr << "Unexpected '{' alone at " << contextName << ":" << lineno << std::endl;
-            return false;
+            std::ostringstream ss;
+            ss << "Unexpected '{' alone at " << contextName << ":" << lineno;
+            throw std::runtime_error(ss.str());
         }
 
         if (s == "}")
@@ -156,18 +153,20 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
         std::string key, value;
         if (!gparse.ParseDirective(s, key, value))
         {
-            std::cerr << "Invalid directive at " << contextName << ":" << lineno << std::endl;
-            return false;
+            std::ostringstream ss;
+            ss << "Invalid directive at " << contextName << ":" << lineno;
+            throw std::runtime_error(ss.str());
         }
-        if (seenKeys.find(key) != seenKeys.end())
-        {
-            if (multiKeys.find(key) == multiKeys.end())
+            if (seenKeys.find(key) != seenKeys.end())
             {
-                std::cerr << "Duplicate directive key '" << key << "' at " << contextName << ":" << lineno << std::endl;
-                return false;
+                if (multiKeys.find(key) == multiKeys.end())
+                {
+                    std::ostringstream ss;
+                    ss << "Duplicate directive key '" << key << "' at " << contextName << ":" << lineno;
+                    throw std::runtime_error(ss.str());
+                }
+                // allowed to repeat; do not treat as error
             }
-            // allowed to repeat; do not treat as error
-        }
         seenKeys.insert(key);
     }
     return true;
