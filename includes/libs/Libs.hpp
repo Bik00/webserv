@@ -27,7 +27,6 @@
 # include <sys/stat.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
-# include <sstream>
 
 # include "../struct/ListenAddr.hpp"
 
@@ -35,7 +34,7 @@
 /* ----------------------------- CONSTRUCTOR -------------------------------- */
 /* ************************************************************************** */
 
-# define DEFAULT_CONFIG_PATH "./config/default.conf";
+# define DEFAULT_CONFIG_PATH "./config/default.conf"
 
 # define DEFAULT_WORKER_PROCESSES 1
 # define DEFAULT_WORKER_CONNECTIONS 1024

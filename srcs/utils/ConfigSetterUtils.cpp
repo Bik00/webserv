@@ -102,8 +102,15 @@ bool ConfigSetterUtils::setBaseBlock(const std::string &key, const std::string &
     }
     else if (key == "autoindex")
     {
-        if (val == "on") block.setAutoindex(true);
-        else block.setAutoindex(false);
+        if (val == "on")
+            block.setAutoindex(true);
+        else if (val == "off")
+            block.setAutoindex(false);
+        else
+        {
+            std::cerr << "Invalid autoindex value: '" << val << "' (must be 'on' or 'off')" << std::endl;
+            return false;
+        }
         return true;
     }
     

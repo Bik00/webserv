@@ -120,6 +120,12 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
     std::string line;
     size_t lineno = 0;
     std::set<std::string> seenKeys;
+    // keys allowed to appear multiple times within the same block
+    std::set<std::string> multiKeys;
+    multiKeys.insert(std::string("index"));
+    multiKeys.insert(std::string("error_page"));
+    multiKeys.insert(std::string("listen"));
+    multiKeys.insert(std::string("server_name"));
     GeneralParseUtils gparse;
 
     while (std::getline(is, line))
@@ -153,10 +159,14 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
             std::cerr << "Invalid directive at " << contextName << ":" << lineno << std::endl;
             return false;
         }
-    if (seenKeys.find(key) != seenKeys.end())
+        if (seenKeys.find(key) != seenKeys.end())
         {
-            std::cerr << "Duplicate directive key '" << key << "' at " << contextName << ":" << lineno << std::endl;
-            return false;
+            if (multiKeys.find(key) == multiKeys.end())
+            {
+                std::cerr << "Duplicate directive key '" << key << "' at " << contextName << ":" << lineno << std::endl;
+                return false;
+            }
+            // allowed to repeat; do not treat as error
         }
         seenKeys.insert(key);
     }
