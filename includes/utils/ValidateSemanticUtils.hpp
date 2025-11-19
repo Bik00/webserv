@@ -19,6 +19,9 @@ private:
     void validateLocationBlock(const LocationBlock &location, size_t serverIndex, size_t locIndex);
     void validateListenEntries(const ServerBlock &server, size_t serverIndex);
     void validateCrossBindings(const Config &config);
+    void validateErrorPageConflicts(const ServerBlock &server, size_t serverIndex);
+    void validateListenConflicts(const Config &config);
+    void validateVirtualHosting(const Config &config);
 
 public:
     ValidateSemanticUtils(void);

@@ -313,6 +313,9 @@ void ValidateSemanticUtils::validateServerBlock(const ServerBlock &server, size_
         }
     }
     
+    // Priority B: Validate error_page conflicts
+    validateErrorPageConflicts(server, serverIndex);
+    
     // Validate each location
     const std::vector<LocationBlock> &locations = server.getLocationBlocks();
     std::set<std::string> seenPaths;
@@ -378,6 +381,160 @@ void ValidateSemanticUtils::validateCrossBindings(const Config &config)
     }
 }
 
+// Validate error_page conflicts within server and its locations
+void ValidateSemanticUtils::validateErrorPageConflicts(const ServerBlock &server, size_t serverIndex)
+{
+    // Check for duplicate error_page codes in server's error pages
+    const std::map<int, std::string> &serverErrors = server.getErrorPages();
+    std::set<int> serverCodes;
+    
+    for (std::map<int, std::string>::const_iterator it = serverErrors.begin();
+         it != serverErrors.end(); ++it)
+    {
+        if (serverCodes.find(it->first) != serverCodes.end())
+        {
+            std::ostringstream err;
+            err << "Server #" << serverIndex << ": duplicate error_page code " << it->first;
+            throw std::runtime_error(err.str());
+        }
+        serverCodes.insert(it->first);
+    }
+    
+    // Check for duplicate error_page codes within each location
+    const std::vector<LocationBlock> &locations = server.getLocationBlocks();
+    for (size_t li = 0; li < locations.size(); ++li)
+    {
+        const std::map<int, std::string> &locErrors = locations[li].getErrorPages();
+        std::set<int> locCodes;
+        
+        for (std::map<int, std::string>::const_iterator it = locErrors.begin();
+             it != locErrors.end(); ++it)
+        {
+            if (locCodes.find(it->first) != locCodes.end())
+            {
+                std::ostringstream err;
+                err << "Server #" << serverIndex << " location '" << locations[li].getPath()
+                    << "': duplicate error_page code " << it->first;
+                throw std::runtime_error(err.str());
+            }
+            locCodes.insert(it->first);
+        }
+    }
+}
+
+// Validate listen conflicts across servers (warn about shared listen addresses)
+void ValidateSemanticUtils::validateListenConflicts(const Config &config)
+{
+    const HttpBlock &http = config.getHttpBlock();
+    const std::vector<ServerBlock> &servers = http.getServerBlocks();
+    
+    // Track host:port -> list of server indices
+    std::map<std::string, std::vector<size_t> > listenMap;
+    
+    for (size_t si = 0; si < servers.size(); ++si)
+    {
+        const std::vector<ListenAddr> &listens = servers[si].getListenAddrs();
+        
+        for (size_t li = 0; li < listens.size(); ++li)
+        {
+            const ListenAddr &la = listens[li];
+            std::ostringstream key;
+            key << la.host << ":" << la.port;
+            listenMap[key.str()].push_back(si);
+        }
+    }
+    
+    // Check for shared listen addresses (multiple servers on same host:port)
+    // This is allowed but requires proper server_name configuration for virtual hosting
+    for (std::map<std::string, std::vector<size_t> >::const_iterator it = listenMap.begin();
+         it != listenMap.end(); ++it)
+    {
+        if (it->second.size() > 1)
+        {
+            // Multiple servers share same listen address - this is OK for virtual hosting
+            // Just ensure at least one has a server_name for proper routing
+            bool hasServerName = false;
+            for (size_t i = 0; i < it->second.size(); ++i)
+            {
+                size_t si = it->second[i];
+                if (!servers[si].getServerNames().empty())
+                {
+                    hasServerName = true;
+                    break;
+                }
+            }
+            
+            if (!hasServerName)
+            {
+                std::ostringstream warn;
+                warn << "Warning: Multiple servers on " << it->first 
+                     << " without server_name may cause routing issues (servers: ";
+                for (size_t i = 0; i < it->second.size(); ++i)
+                {
+                    if (i > 0) warn << ", ";
+                    warn << "#" << it->second[i];
+                }
+                warn << ")";
+                std::cerr << warn.str() << std::endl;
+            }
+        }
+    }
+}
+
+// Validate virtual hosting configuration (server_name requirements)
+void ValidateSemanticUtils::validateVirtualHosting(const Config &config)
+{
+    const HttpBlock &http = config.getHttpBlock();
+    const std::vector<ServerBlock> &servers = http.getServerBlocks();
+    
+    // Group servers by listen address
+    std::map<std::string, std::vector<size_t> > listenGroups;
+    
+    for (size_t si = 0; si < servers.size(); ++si)
+    {
+        const std::vector<ListenAddr> &listens = servers[si].getListenAddrs();
+        
+        for (size_t li = 0; li < listens.size(); ++li)
+        {
+            const ListenAddr &la = listens[li];
+            std::ostringstream key;
+            key << la.host << ":" << la.port;
+            listenGroups[key.str()].push_back(si);
+        }
+    }
+    
+    // For each listen address with multiple servers, check server_name conflicts
+    for (std::map<std::string, std::vector<size_t> >::const_iterator it = listenGroups.begin();
+         it != listenGroups.end(); ++it)
+    {
+        if (it->second.size() <= 1)
+            continue;
+            
+        // Check for duplicate server_names on same listen address
+        std::map<std::string, size_t> nameToServer;
+        
+        for (size_t i = 0; i < it->second.size(); ++i)
+        {
+            size_t si = it->second[i];
+            const std::vector<std::string> &names = servers[si].getServerNames();
+            
+            for (size_t ni = 0; ni < names.size(); ++ni)
+            {
+                const std::string &name = names[ni];
+                
+                if (nameToServer.find(name) != nameToServer.end())
+                {
+                    std::ostringstream err;
+                    err << "Duplicate server_name '" << name << "' on " << it->first
+                        << " (servers #" << nameToServer[name] << " and #" << si << ")";
+                    throw std::runtime_error(err.str());
+                }
+                nameToServer[name] = si;
+            }
+        }
+    }
+}
+
 // Main validation entry point
 bool ValidateSemanticUtils::ValidateSemantic(Config &config)
 {
@@ -397,7 +554,9 @@ bool ValidateSemanticUtils::ValidateSemantic(Config &config)
         }
         
         // Priority B: Cross-binding validations
-        validateCrossBindings(config);
+        validateCrossBindings(config);      // Check duplicate default_server
+        validateListenConflicts(config);    // Warn about shared listen addresses
+        validateVirtualHosting(config);     // Check server_name conflicts on same listen
         
         return true;
     }
