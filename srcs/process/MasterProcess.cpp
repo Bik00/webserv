@@ -1,11 +1,34 @@
 #include "../../includes/process/MasterProcess.hpp"
 
+// Global flag for signal handling
+static volatile sig_atomic_t g_shutdown = 0;
+
+// Signal handlers
+static void sigterm_handler(int sig)
+{
+    (void)sig;
+    g_shutdown = 1;
+}
+
+static void sigchld_handler(int sig)
+{
+    (void)sig;
+    // Just mark that a child died; main loop will handle with waitpid
+}
+
 MasterProcess::MasterProcess(void)
 {
 }
 
 MasterProcess::~MasterProcess(void)
 {
+    // Cleanup: close and delete all listen sockets
+    for (size_t i = 0; i < listenSockets.size(); ++i)
+    {
+        listenSockets[i]->closeSocket();
+        delete listenSockets[i];
+    }
+    listenSockets.clear();
 }
 
 MasterProcess::MasterProcess(const MasterProcess &ref)
@@ -21,6 +44,255 @@ MasterProcess &MasterProcess::operator=(const MasterProcess &ref)
 
 void MasterProcess::Start(const Config &config)
 {
+    try
+    {
+        std::cout << "Master process starting..." << std::endl;
+        
+        // Step 1: Setup listen sockets (BEFORE fork)
+        setupListenSockets(config);
+        std::cout << "Listening on " << listenSockets.size() << " address(es)" << std::endl;
+        
+        // Step 2: Install signal handlers
+        installSignalHandlers();
+        
+        // Step 3: Fork worker processes
+        forkWorkers(config);
+        std::cout << "Forked " << workerPids.size() << " worker(s)" << std::endl;
+        
+        // Step 4: Monitor loop
+        std::cout << "Master process entering monitor loop..." << std::endl;
+        monitorLoop();
+        
+        std::cout << "Master process shutting down..." << std::endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Master process error: " << e.what() << std::endl;
+        terminateAllWorkers();
+        throw;
+    }
+}
+
+void MasterProcess::setupListenSockets(const Config &config)
+{
+    const HttpBlock &http = config.getHttpBlock();
+    const std::vector<ServerBlock> &servers = http.getServerBlocks();
     
-    std::cout << "MasterProcess started with config path: " << config.getConfigPath() << std::endl;
+    // Collect unique listen addresses
+    std::set<std::string> uniqueListens;
+    
+    for (size_t si = 0; si < servers.size(); ++si)
+    {
+        const std::vector<ListenAddr> &listens = servers[si].getListenAddrs();
+        
+        for (size_t li = 0; li < listens.size(); ++li)
+        {
+            const ListenAddr &la = listens[li];
+            std::ostringstream key;
+            key << la.host << ":" << la.port;
+            uniqueListens.insert(key.str());
+        }
+    }
+    
+    // Create, bind, and listen on each unique address
+    for (std::set<std::string>::const_iterator it = uniqueListens.begin();
+         it != uniqueListens.end(); ++it)
+    {
+        // Parse host:port from key
+        std::string key = *it;
+        size_t colonPos = key.find(':');
+        if (colonPos == std::string::npos)
+            continue;
+        
+        std::string host = key.substr(0, colonPos);
+        std::string portStr = key.substr(colonPos + 1);
+        int port = 0;
+        std::istringstream(portStr) >> port;
+        
+        // Create and setup socket
+        ListenSocket *sock = new ListenSocket(host, port);
+        sock->bindSocket();
+        sock->listenSocket(128); // backlog of 128
+        sock->setNonBlocking();
+        
+        listenSockets.push_back(sock);
+        
+        std::cout << "Bound to " << host << ":" << port 
+                  << " (fd=" << sock->getFd() << ")" << std::endl;
+    }
+    
+    if (listenSockets.empty())
+    {
+        throw std::runtime_error("No listen sockets created");
+    }
+}
+
+void MasterProcess::installSignalHandlers()
+{
+    struct sigaction sa;
+    
+    // SIGTERM / SIGINT for graceful shutdown
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigterm_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    
+    if (sigaction(SIGTERM, &sa, NULL) < 0)
+        throw std::runtime_error("Failed to install SIGTERM handler");
+    if (sigaction(SIGINT, &sa, NULL) < 0)
+        throw std::runtime_error("Failed to install SIGINT handler");
+    
+    // SIGCHLD for child exit
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    
+    if (sigaction(SIGCHLD, &sa, NULL) < 0)
+        throw std::runtime_error("Failed to install SIGCHLD handler");
+}
+
+void MasterProcess::forkWorkers(const Config &config)
+{
+    int nWorkers = config.getWorkerProcesses();
+    
+    for (int i = 0; i < nWorkers; ++i)
+    {
+        pid_t pid = fork();
+        
+        if (pid < 0)
+        {
+            // Fork failed
+            std::cerr << "Fork failed for worker " << i << std::endl;
+            throw std::runtime_error("fork() failed");
+        }
+        else if (pid == 0)
+        {
+            // Child process: become worker
+            // TODO: Call WorkerProcess::Run() with listen FDs
+            
+            std::cout << "Worker process " << getpid() << " started" << std::endl;
+            
+            // For now, just sleep (placeholder until WorkerProcess is implemented)
+            while (true)
+            {
+                sleep(1);
+            }
+            
+            _exit(0);
+        }
+        else
+        {
+            // Parent: record worker PID
+            addWorkerPid(pid);
+            std::cout << "Forked worker " << i << " (PID: " << pid << ")" << std::endl;
+        }
+    }
+}
+
+void MasterProcess::addWorkerPid(pid_t pid)
+{
+    workerPids.push_back(pid);
+}
+
+void MasterProcess::handleWorkerExit(pid_t pid, int status)
+{
+    // Remove from worker list
+    for (std::vector<pid_t>::iterator it = workerPids.begin(); 
+         it != workerPids.end(); ++it)
+    {
+        if (*it == pid)
+        {
+            workerPids.erase(it);
+            break;
+        }
+    }
+    
+    if (WIFEXITED(status))
+    {
+        std::cout << "Worker " << pid << " exited with status " 
+                  << WEXITSTATUS(status) << std::endl;
+    }
+    else if (WIFSIGNALED(status))
+    {
+        std::cout << "Worker " << pid << " killed by signal " 
+                  << WTERMSIG(status) << std::endl;
+    }
+    
+    // TODO: Implement respawn policy if needed
+}
+
+void MasterProcess::terminateAllWorkers()
+{
+    std::cout << "Terminating all workers..." << std::endl;
+    
+    // Send SIGTERM to all workers
+    for (size_t i = 0; i < workerPids.size(); ++i)
+    {
+        kill(workerPids[i], SIGTERM);
+    }
+    
+    // Wait for workers to exit (with timeout)
+    int waitCount = 0;
+    const int maxWait = 5; // 5 seconds
+    
+    while (!workerPids.empty() && waitCount < maxWait)
+    {
+        int status;
+        pid_t pid = waitpid(-1, &status, WNOHANG);
+        
+        if (pid > 0)
+        {
+            handleWorkerExit(pid, status);
+        }
+        else
+        {
+            sleep(1);
+            waitCount++;
+        }
+    }
+    
+    // Force kill any remaining workers
+    if (!workerPids.empty())
+    {
+        std::cout << "Force killing remaining workers..." << std::endl;
+        for (size_t i = 0; i < workerPids.size(); ++i)
+        {
+            kill(workerPids[i], SIGKILL);
+        }
+        
+        // Reap zombies
+        while (waitpid(-1, NULL, WNOHANG) > 0)
+            ;
+    }
+    
+    workerPids.clear();
+}
+
+void MasterProcess::monitorLoop()
+{
+    while (!g_shutdown)
+    {
+        // Check for dead workers
+        int status;
+        pid_t pid;
+        
+        while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+        {
+            handleWorkerExit(pid, status);
+        }
+        
+        // If all workers died and we're not shutting down, exit
+        if (workerPids.empty() && !g_shutdown)
+        {
+            std::cerr << "All workers died unexpectedly" << std::endl;
+            break;
+        }
+        
+        // Sleep briefly
+        sleep(1);
+    }
+    
+    // Shutdown requested
+    terminateAllWorkers();
 }

@@ -27,6 +27,10 @@
 # include <sys/stat.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# include <sys/wait.h>
+# include <signal.h>
+# include <set>
+# include <cstring>
 
 # include "../struct/ListenAddr.hpp"
 
