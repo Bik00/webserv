@@ -1,4 +1,4 @@
-#include "../../includes/master/MasterProcess.hpp"
+#include "../../includes/process/MasterProcess.hpp"
 
 MasterProcess::MasterProcess(void)
 {

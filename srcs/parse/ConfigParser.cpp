@@ -21,13 +21,16 @@ ConfigParser &ConfigParser::operator=(const ConfigParser &ref)
 
 bool ConfigParser::Parse(int argc, char **argv, Config &config)
 {
-    ConfigValidatorUtils    validatorUtils;
+    ValidateContextUtils    validateContextUtils;
+    ValidateSemanticUtils  validateSemanticUtils;
     ConfigSetterUtils       setterUtils;
     bool ret = true;
 
-    ret = validatorUtils.Validate(argc, argv, config);
+    ret = validateContextUtils.ValidateContext(argc, argv, config);
     if (ret)
         ret = setterUtils.SetValue(argv, config);
+    if (ret)
+        ret = validateSemanticUtils.ValidateSemantic(config);
     if (ret)
         config.printConfig();
     return (ret);

@@ -3,8 +3,8 @@
 
 # include "../libs/Libs.hpp"
 # include "../config/Config.hpp"
-# include "../../includes/parse/ConfigParser.hpp"
-# include "../../includes/master/MasterProcess.hpp"
+# include "../parse/ConfigParser.hpp"
+# include "../process/MasterProcess.hpp"
 
 class ServerManager
 {

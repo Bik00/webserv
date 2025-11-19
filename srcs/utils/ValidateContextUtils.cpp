@@ -1,27 +1,26 @@
-#include "../../includes/utils/ConfigValidatorUtils.hpp"
-#include "../../includes/utils/GeneralParseUtils.hpp"
-#include "../../includes/libs/Libs.hpp"
+#include "utils/ValidateContextUtils.hpp"
+#include "utils/GeneralParseUtils.hpp"
 
-ConfigValidatorUtils::ConfigValidatorUtils(void)
+ValidateContextUtils::ValidateContextUtils(void)
 {
 }
 
-ConfigValidatorUtils::~ConfigValidatorUtils(void)
+ValidateContextUtils::~ValidateContextUtils(void)
 {
 }
 
-ConfigValidatorUtils::ConfigValidatorUtils(const ConfigValidatorUtils &ref)
+ValidateContextUtils::ValidateContextUtils(const ValidateContextUtils &ref)
 {
     (void)ref;
 }
 
-ConfigValidatorUtils &ConfigValidatorUtils::operator=(const ConfigValidatorUtils &ref)
+ValidateContextUtils &ValidateContextUtils::operator=(const ValidateContextUtils &ref)
 {
     (void)ref;
     return *this;
 }
 
-bool ConfigValidatorUtils::Validate(int argc, char **argv, Config &config)
+bool ValidateContextUtils::ValidateContext(int argc, char **argv, Config &config)
 {
     std::string path = checkArgc(argc, argv);
     config.setConfigPath(path);
@@ -31,10 +30,10 @@ bool ConfigValidatorUtils::Validate(int argc, char **argv, Config &config)
     {
         throw std::runtime_error(std::string("Could not open config file: ") + path);
     }
-    return validateContext(ifs, "global");
+    return validateLine(ifs, "global");
 }
 
-std::string ConfigValidatorUtils::checkArgc(int argc, char **argv)
+std::string ValidateContextUtils::checkArgc(int argc, char **argv)
 {
     std::string configPath;
 
@@ -54,7 +53,7 @@ std::string ConfigValidatorUtils::checkArgc(int argc, char **argv)
     return (configPath);
 }
 
-bool ConfigValidatorUtils::validatePath(const std::string &configPath)
+bool ValidateContextUtils::validatePath(const std::string &configPath)
 {
     // copy from previous implementation
     std::vector<std::string> comps;
@@ -111,7 +110,7 @@ bool ConfigValidatorUtils::validatePath(const std::string &configPath)
 }
 
 // recursive validators moved here
-bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &contextName)
+bool ValidateContextUtils::validateLine(std::istream &is, const std::string &contextName)
 {
     std::string line;
     size_t lineno = 0;
@@ -172,7 +171,7 @@ bool ConfigValidatorUtils::validateContext(std::istream &is, const std::string &
     return true;
 }
 
-bool ConfigValidatorUtils::validateBlock(std::istream &is, const std::string &blockName)
+bool ValidateContextUtils::validateBlock(std::istream &is, const std::string &blockName)
 {
     std::string body;
     char c;
@@ -202,7 +201,7 @@ bool ConfigValidatorUtils::validateBlock(std::istream &is, const std::string &bl
         return false;
     }
     std::istringstream inner(body);
-    if (!validateContext(inner, blockName))
+    if (!validateLine(inner, blockName))
         return false;
     return true;
 }
