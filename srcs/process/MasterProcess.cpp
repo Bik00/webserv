@@ -129,26 +129,14 @@ void MasterProcess::setupListenSockets(const Config &config)
 
 void MasterProcess::installSignalHandlers()
 {
-    struct sigaction sa;
-    
-    // SIGTERM / SIGINT for graceful shutdown
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = sigterm_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    
-    if (sigaction(SIGTERM, &sa, NULL) < 0)
+    // Use the simple signal() API instead of sigaction
+    if (signal(SIGTERM, sigterm_handler) == SIG_ERR)
         throw std::runtime_error("Failed to install SIGTERM handler");
-    if (sigaction(SIGINT, &sa, NULL) < 0)
+
+    if (signal(SIGINT, sigterm_handler) == SIG_ERR)
         throw std::runtime_error("Failed to install SIGINT handler");
-    
-    // SIGCHLD for child exit
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = sigchld_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-    
-    if (sigaction(SIGCHLD, &sa, NULL) < 0)
+
+    if (signal(SIGCHLD, sigchld_handler) == SIG_ERR)
         throw std::runtime_error("Failed to install SIGCHLD handler");
 }
 
