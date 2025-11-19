@@ -6,6 +6,20 @@
 
 class ValidateSemanticUtils
 {
+private:
+    // Helper functions
+    int parsePort(const std::string &portStr);
+    bool isValidMethod(const std::string &method);
+    bool checkPathSyntax(const std::string &path);
+    
+    // Validation functions
+    void validateWorkerProcesses(const Config &config);
+    void validateHttpBlock(const Config &config);
+    void validateServerBlock(const ServerBlock &server, size_t serverIndex);
+    void validateLocationBlock(const LocationBlock &location, size_t serverIndex, size_t locIndex);
+    void validateListenEntries(const ServerBlock &server, size_t serverIndex);
+    void validateCrossBindings(const Config &config);
+
 public:
     ValidateSemanticUtils(void);
     ~ValidateSemanticUtils();

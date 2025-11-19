@@ -56,6 +56,11 @@ int Config::getWorkerProcesses() const
     return this->workerProcesses;
 }
 
+const HttpBlock &Config::getHttpBlock() const
+{
+    return this->httpBlock;
+}
+
 static void printIndent(int depth)
 {
     for (int i = 0; i < depth; ++i) std::cout << "  ";

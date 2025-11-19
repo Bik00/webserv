@@ -23,6 +23,8 @@ public:
 	void addEventBlock(const EventBlock &eventBlock);
 	void addHttpBlock(const HttpBlock &httpBlock);
 
+	const HttpBlock &getHttpBlock() const;
+
 	const std::string &getConfigPath() const;
 	int getWorkerProcesses() const;
 	void printConfig() const;

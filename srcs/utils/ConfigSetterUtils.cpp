@@ -315,7 +315,29 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
         {
             if (blockName == "location")
             {
-                if (!setLocationBlock(inner, sb)) return false;
+                // Extract location path from the original line
+                // Format: "location <path> {"
+                std::string locationPath;
+                size_t locPos = s.find("location");
+                if (locPos != std::string::npos)
+                {
+                    size_t pathStart = locPos + std::string("location").size();
+                    size_t bracePos = s.find('{', pathStart);
+                    if (bracePos != std::string::npos)
+                    {
+                        locationPath = s.substr(pathStart, bracePos - pathStart);
+                        // Trim whitespace
+                        size_t first = locationPath.find_first_not_of(" \t");
+                        size_t last = locationPath.find_last_not_of(" \t");
+                        if (first != std::string::npos && last != std::string::npos)
+                            locationPath = locationPath.substr(first, last - first + 1);
+                        else
+                            locationPath = "";
+                    }
+                }
+                if (locationPath.empty())
+                    throw std::runtime_error("location block must have a path");
+                if (!setLocationBlock(inner, sb, locationPath)) return false;
             }
             else
             {
@@ -376,7 +398,7 @@ bool ConfigSetterUtils::setServerBlock(std::istream &is, HttpBlock &httpBlock)
     return true;
 }
 
-bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBlock)
+bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBlock, const std::string &path)
 {
     GeneralParseUtils gparse;
     std::string body;
@@ -387,6 +409,9 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
     std::istringstream inner(body);
     std::string line;
     LocationBlock lb;
+    
+    // Set the location path
+    lb.setPath(path);
     
     while (std::getline(inner, line))
     {
