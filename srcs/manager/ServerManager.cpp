@@ -1,5 +1,4 @@
 #include "../../includes/manager/ServerManager.hpp"
-#include "../../includes/parse/ConfigParser.hpp"
 
 ServerManager::ServerManager(void)
 {
@@ -23,9 +22,11 @@ ServerManager &ServerManager::operator=(const ServerManager &ref)
 void ServerManager::Run(int argc, char **argv)
 {
     ConfigParser parser;
+    MasterProcess masterProcess;
 
     if (parser.Parse(argc, argv, this->config) == false)
         throw std::runtime_error("Configuration parsing failed");
+    masterProcess.Start(this->config);
 }
 
 int ServerManager::exitServer(const std::string &message)
