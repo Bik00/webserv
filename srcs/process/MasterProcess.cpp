@@ -22,13 +22,13 @@ MasterProcess::MasterProcess(void)
 
 MasterProcess::~MasterProcess(void)
 {
-    // Cleanup: close and delete all listen sockets
-    for (size_t i = 0; i < listenSockets.size(); ++i)
+    // Cleanup: close and delete all server sockets
+    for (size_t i = 0; i < serverSockets.size(); ++i)
     {
-        listenSockets[i]->setClose();
-        delete listenSockets[i];
+        serverSockets[i]->setClose();
+        delete serverSockets[i];
     }
-    listenSockets.clear();
+    serverSockets.clear();
 }
 
 MasterProcess::MasterProcess(const MasterProcess &ref)
@@ -48,9 +48,9 @@ void MasterProcess::Start(const Config &config)
     {
         std::cout << "Master process starting..." << std::endl;
         
-        // Step 1: Setup listen sockets (BEFORE fork)
-        setupListenSockets(config);
-        std::cout << "Listening on " << listenSockets.size() << " address(es)" << std::endl;
+        // Step 1: Setup server sockets (BEFORE fork)
+        setupServerSockets(config);
+        std::cout << "Listening on " << serverSockets.size() << " address(es)" << std::endl;
         
         // Step 2: Install signal handlers
         installSignalHandlers();
@@ -73,7 +73,7 @@ void MasterProcess::Start(const Config &config)
     }
 }
 
-void MasterProcess::setupListenSockets(const Config &config)
+void MasterProcess::setupServerSockets(const Config &config)
 {
     const HttpBlock &http = config.getHttpBlock();
     const std::vector<ServerBlock> &servers = http.getServerBlocks();
@@ -110,20 +110,20 @@ void MasterProcess::setupListenSockets(const Config &config)
         std::istringstream(portStr) >> port;
         
         // Create and setup socket
-        ListenSocket *sock = new ListenSocket(host, port);
+        ServerSocket *sock = new ServerSocket(host, port);
         sock->setBind();
         sock->setListen();
         sock->setNonBlocking();
         
-        listenSockets.push_back(sock);
+        serverSockets.push_back(sock);
         
         std::cout << "Bound to " << host << ":" << port 
                   << " (fd=" << sock->getFd() << ")" << std::endl;
     }
     
-    if (listenSockets.empty())
+    if (serverSockets.empty())
     {
-        throw std::runtime_error("No listen sockets created");
+        throw std::runtime_error("No server sockets created");
     }
 }
 

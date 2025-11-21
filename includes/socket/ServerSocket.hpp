@@ -1,9 +1,9 @@
-#ifndef LISTEN_SOCKET_HPP
-# define LISTEN_SOCKET_HPP
+#ifndef SERVER_SOCKET_HPP
+# define SERVER_SOCKET_HPP
 
 # include "../libs/Libs.hpp"
 
-class ListenSocket
+class ServerSocket
 {
 private:
     int fd;
@@ -12,11 +12,11 @@ private:
     bool bound;
     
 public:
-    ListenSocket(void);
-    ListenSocket(const std::string &host, int port);
-    ~ListenSocket(void);
-    ListenSocket(const ListenSocket &ref);
-    ListenSocket &operator=(const ListenSocket &ref);
+    ServerSocket(void);
+    ServerSocket(const std::string &host, int port);
+    ~ServerSocket(void);
+    ServerSocket(const ServerSocket &ref);
+    ServerSocket &operator=(const ServerSocket &ref);
     
     // Socket operations
     void setBind();
@@ -31,4 +31,4 @@ public:
     bool isBound() const;
 };
 
-#endif /* LISTEN_SOCKET_HPP */
+#endif /* SERVER_SOCKET_HPP */

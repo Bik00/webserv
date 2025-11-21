@@ -1,25 +1,25 @@
-#include "../../includes/socket/ListenSocket.hpp"
+#include "../../includes/socket/ServerSocket.hpp"
 
-ListenSocket::ListenSocket(void) : fd(-1), host("0.0.0.0"), port(80), bound(false)
+ServerSocket::ServerSocket(void) : fd(-1), host("0.0.0.0"), port(80), bound(false)
 {
 }
 
-ListenSocket::ListenSocket(const std::string &host, int port) 
+ServerSocket::ServerSocket(const std::string &host, int port) 
     : fd(-1), host(host), port(port), bound(false)
 {
 }
 
-ListenSocket::~ListenSocket(void)
+ServerSocket::~ServerSocket(void)
 {
     setClose();
 }
 
-ListenSocket::ListenSocket(const ListenSocket &ref)
+ServerSocket::ServerSocket(const ServerSocket &ref)
     : fd(ref.fd), host(ref.host), port(ref.port), bound(ref.bound)
 {
 }
 
-ListenSocket &ListenSocket::operator=(const ListenSocket &ref)
+ServerSocket &ServerSocket::operator=(const ServerSocket &ref)
 {
     if (this != &ref)
     {
@@ -31,7 +31,7 @@ ListenSocket &ListenSocket::operator=(const ListenSocket &ref)
     return (*this);
 }
 
-void ListenSocket::setBind()
+void ServerSocket::setBind()
 {
     if (bound)
         return;
@@ -88,7 +88,7 @@ void ListenSocket::setBind()
     bound = true;
 }
 
-void ListenSocket::setListen()
+void ServerSocket::setListen()
 {
     if (!bound)
     {
@@ -101,7 +101,7 @@ void ListenSocket::setListen()
     }
 }
 
-void ListenSocket::setNonBlocking()
+void ServerSocket::setNonBlocking()
 {
     if (fd < 0)
     {
@@ -120,7 +120,7 @@ void ListenSocket::setNonBlocking()
     }
 }
 
-void ListenSocket::setClose()
+void ServerSocket::setClose()
 {
     if (fd >= 0)
     {
@@ -130,22 +130,22 @@ void ListenSocket::setClose()
     }
 }
 
-int ListenSocket::getFd() const
+int ServerSocket::getFd() const
 {
     return fd;
 }
 
-const std::string &ListenSocket::getHost() const
+const std::string &ServerSocket::getHost() const
 {
     return host;
 }
 
-int ListenSocket::getPort() const
+int ServerSocket::getPort() const
 {
     return port;
 }
 
-bool ListenSocket::isBound() const
+bool ServerSocket::isBound() const
 {
     return bound;
 }
