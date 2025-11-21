@@ -19,9 +19,9 @@ public:
     ListenSocket &operator=(const ListenSocket &ref);
     
     // Socket operations
-    void bindSocket();
-    void listenSocket(int backlog = 128);
-    void closeSocket();
+    void setBind();
+    void setListen();
+    void setClose();
     void setNonBlocking();
 
     // Getters

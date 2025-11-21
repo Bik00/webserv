@@ -11,7 +11,7 @@ ListenSocket::ListenSocket(const std::string &host, int port)
 
 ListenSocket::~ListenSocket(void)
 {
-    closeSocket();
+    setClose();
 }
 
 ListenSocket::ListenSocket(const ListenSocket &ref)
@@ -31,7 +31,7 @@ ListenSocket &ListenSocket::operator=(const ListenSocket &ref)
     return (*this);
 }
 
-void ListenSocket::bindSocket()
+void ListenSocket::setBind()
 {
     if (bound)
         return;
@@ -88,14 +88,14 @@ void ListenSocket::bindSocket()
     bound = true;
 }
 
-void ListenSocket::listenSocket(int backlog)
+void ListenSocket::setListen()
 {
     if (!bound)
     {
         throw std::runtime_error("Cannot listen on unbound socket");
     }
     
-    if (listen(fd, backlog) < 0)
+    if (listen(fd, SOMAXCONN) < 0)
     {
         throw std::runtime_error("Failed to listen on socket");
     }
@@ -120,7 +120,7 @@ void ListenSocket::setNonBlocking()
     }
 }
 
-void ListenSocket::closeSocket()
+void ListenSocket::setClose()
 {
     if (fd >= 0)
     {

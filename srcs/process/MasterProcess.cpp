@@ -25,7 +25,7 @@ MasterProcess::~MasterProcess(void)
     // Cleanup: close and delete all listen sockets
     for (size_t i = 0; i < listenSockets.size(); ++i)
     {
-        listenSockets[i]->closeSocket();
+        listenSockets[i]->setClose();
         delete listenSockets[i];
     }
     listenSockets.clear();
@@ -111,8 +111,8 @@ void MasterProcess::setupListenSockets(const Config &config)
         
         // Create and setup socket
         ListenSocket *sock = new ListenSocket(host, port);
-        sock->bindSocket();
-        sock->listenSocket(128); // backlog of 128
+        sock->setBind();
+        sock->setListen();
         sock->setNonBlocking();
         
         listenSockets.push_back(sock);
