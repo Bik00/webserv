@@ -133,7 +133,7 @@ void MasterProcess::installSignalHandlers()
 void MasterProcess::forkWorkers(const Config &config)
 {
     int nWorkers = config.getWorkerProcesses();
-    std::vector<int> listenFds = getListenFds();
+    std::vector<int> serverSocketFds = getServerSocketFds();
     
     for (int i = 0; i < nWorkers; ++i)
     {
@@ -149,9 +149,7 @@ void MasterProcess::forkWorkers(const Config &config)
         {
             // Child process: become worker
             WorkerProcess worker;
-            worker.Run(listenFds);
-            
-            // Should never reach here
+            worker.Run(serverSocketFds);
             _exit(0);
         }
         else
@@ -163,7 +161,7 @@ void MasterProcess::forkWorkers(const Config &config)
     }
 }
 
-std::vector<int> MasterProcess::getListenFds() const
+std::vector<int> MasterProcess::getServerSocketFds() const
 {
     std::vector<int> fds;
     for (size_t i = 0; i < serverSockets.size(); ++i)

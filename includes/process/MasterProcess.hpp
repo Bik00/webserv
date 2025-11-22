@@ -17,7 +17,7 @@ private:
     // Setup and initialization
     void setupServerSockets(const Config &config);
     void forkWorkers(const Config &config);
-    std::vector<int> getListenFds() const;
+    std::vector<int> getServerSocketFds() const;
     
     // Signal handling
     void installSignalHandlers();

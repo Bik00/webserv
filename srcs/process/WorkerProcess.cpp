@@ -35,10 +35,10 @@ WorkerProcess &WorkerProcess::operator=(const WorkerProcess &ref)
 
 void WorkerProcess::Run(const std::vector<int> &fds)
 {
-    listenFds = fds;
+    serverSocketFds = fds;
     
     std::cout << "[Worker " << getpid() << "] Starting with " 
-              << listenFds.size() << " listen socket(s)" << std::endl;
+              << serverSocketFds.size() << " listen socket(s)" << std::endl;
     
     try
     {
@@ -56,31 +56,31 @@ void WorkerProcess::Run(const std::vector<int> &fds)
 
 void WorkerProcess::setupEpoll()
 {
-    epollFd = epoll_create1(EPOLL_CLOEXEC);
+    epollFd = epoll_create(1);
     if (epollFd < 0)
     {
-        throw std::runtime_error("epoll_create1() failed");
+        throw std::runtime_error("epoll_create() failed");
     }
     std::cout << "[Worker " << getpid() << "] Epoll fd: " << epollFd << std::endl;
 }
 
 void WorkerProcess::addListenSockets()
 {
-    for (size_t i = 0; i < listenFds.size(); ++i)
+    for (size_t i = 0; i < serverSocketFds.size(); ++i)
     {
         struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLET;  // Edge-triggered for listen sockets
-        ev.data.fd = listenFds[i];
+        ev.data.fd = serverSocketFds[i];
         
-        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, listenFds[i], &ev) < 0)
+        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocketFds[i], &ev) < 0)
         {
             std::ostringstream err;
-            err << "epoll_ctl(ADD) failed for listen fd " << listenFds[i];
+            err << "epoll_ctl(ADD) failed for listen fd " << serverSocketFds[i];
             throw std::runtime_error(err.str());
         }
         
         std::cout << "[Worker " << getpid() << "] Added listen fd " 
-                  << listenFds[i] << " to epoll" << std::endl;
+                  << serverSocketFds[i] << " to epoll" << std::endl;
     }
 }
 
@@ -108,9 +108,9 @@ void WorkerProcess::eventLoop()
             
             // Check if this is a listen socket
             bool isListenSocket = false;
-            for (size_t j = 0; j < listenFds.size(); ++j)
+            for (size_t j = 0; j < serverSocketFds.size(); ++j)
             {
-                if (listenFds[j] == fd)
+                if (serverSocketFds[j] == fd)
                 {
                     isListenSocket = true;
                     break;

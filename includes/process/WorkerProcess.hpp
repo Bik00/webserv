@@ -9,7 +9,7 @@ class WorkerProcess
 {
 private:
     int epollFd;
-    std::vector<int> listenFds;
+    std::vector<int> serverSocketFds;
     std::map<int, ClientSocket*> clients;
     
     void setupEpoll();
@@ -25,7 +25,7 @@ public:
     ~WorkerProcess(void);
     WorkerProcess(const WorkerProcess &ref);
     WorkerProcess &operator=(const WorkerProcess &ref);
-    void Run(const std::vector<int> &listenFds);
+    void Run(const std::vector<int> &serverSocketFds);
 };
 
 #endif /* WORKER_PROCESS_HPP */
