@@ -35,7 +35,7 @@ public:
     ~MasterProcess(void);
     MasterProcess(const MasterProcess &ref);
     MasterProcess &operator=(const MasterProcess &ref);
-    void Start(const Config &config);
+    void Run(const Config &config);
 };
 
 #endif /* MASTER_PROCESS_HPP */

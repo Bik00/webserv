@@ -26,7 +26,7 @@ void ServerManager::Run(int argc, char **argv)
 
     if (parser.Parse(argc, argv, this->config) == false)
         throw std::runtime_error("Configuration parsing failed");
-    masterProcess.Start(this->config);
+    masterProcess.Run(this->config);
 }
 
 int ServerManager::exitServer(const std::string &message)

@@ -36,7 +36,7 @@ MasterProcess &MasterProcess::operator=(const MasterProcess &ref)
     return (*this);
 }
 
-void MasterProcess::Start(const Config &config)
+void MasterProcess::Run(const Config &config)
 {
     try
     {
