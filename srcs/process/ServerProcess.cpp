@@ -181,8 +181,6 @@ void ServerProcess::eventLoop()
         
         if (nfds < 0)
         {
-            if (errno == EINTR)
-                continue;  // Interrupted by signal, retry
             throw std::runtime_error("epoll_wait() failed");
         }
         
@@ -234,25 +232,13 @@ void ServerProcess::handleListenEvent(int listenFd)
         struct sockaddr_in clientAddr;
         socklen_t addrLen = sizeof(clientAddr);
         
-        int clientFd = accept4(listenFd, (struct sockaddr*)&clientAddr, 
-                               &addrLen, SOCK_NONBLOCK);
+        int clientFd = accept(listenFd, (struct sockaddr*)&clientAddr, 
+                              &addrLen);
         
         if (clientFd < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                // No more connections to accept
-                break;
-            }
-            else if (errno == EINTR)
-            {
-                continue;  // Interrupted, retry
-            }
-            else
-            {
-                std::cerr << "accept4() error: " << strerror(errno) << std::endl;
-                break;
-            }
+            // No more connections to accept (EAGAIN/EWOULDBLOCK) or error
+            break;
         }
         
         // Create ClientSocket object
@@ -266,7 +252,7 @@ void ServerProcess::handleListenEvent(int listenFd)
         
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) < 0)
         {
-            std::cerr << "epoll_ctl(ADD) failed for client: " << strerror(errno) << std::endl;
+            std::cerr << "epoll_ctl(ADD) failed for client" << std::endl;
             closeClient(clientFd);
             continue;
         }
@@ -286,7 +272,7 @@ void ServerProcess::handleClientRead(int fd)
     // Edge-triggered: read all available data
     while (true)
     {
-        ssize_t n = recv(fd, buf, sizeof(buf), 0);
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
         
         if (n > 0)
         {
@@ -302,21 +288,8 @@ void ServerProcess::handleClientRead(int fd)
         }
         else
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                // No more data available
-                break;
-            }
-            else if (errno == EINTR)
-            {
-                continue;  // Interrupted, retry
-            }
-            else
-            {
-                std::cerr << "recv() error: " << strerror(errno) << std::endl;
-                closeClient(fd);
-                break;
-            }
+            // n < 0: No more data (EAGAIN/EWOULDBLOCK) or error
+            break;
         }
     }
     
@@ -350,7 +323,7 @@ void ServerProcess::handleClientWrite(int fd)
     // Edge-triggered: send all available data
     while (!sendBuf.empty())
     {
-        ssize_t n = send(fd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
+        ssize_t n = send(fd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL | MSG_DONTWAIT);
         
         if (n > 0)
         {
@@ -359,21 +332,8 @@ void ServerProcess::handleClientWrite(int fd)
         }
         else
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                // Socket buffer full, will retry later
-                break;
-            }
-            else if (errno == EINTR)
-            {
-                continue;  // Interrupted, retry
-            }
-            else
-            {
-                std::cerr << "send() error: " << strerror(errno) << std::endl;
-                closeClient(fd);
-                break;
-            }
+            // n <= 0: Socket buffer full (EAGAIN/EWOULDBLOCK) or error
+            break;
         }
     }
     
