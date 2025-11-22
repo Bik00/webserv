@@ -10,12 +10,6 @@ static void sigterm_handler(int sig)
     g_shutdown = 1;
 }
 
-static void sigchld_handler(int sig)
-{
-    (void)sig;
-    // Just mark that a child died; main loop will handle with waitpid
-}
-
 MasterProcess::MasterProcess(void)
 {
 }
@@ -134,14 +128,12 @@ void MasterProcess::installSignalHandlers()
 
     if (signal(SIGINT, sigterm_handler) == SIG_ERR)
         throw std::runtime_error("Failed to install SIGINT handler");
-
-    if (signal(SIGCHLD, sigchld_handler) == SIG_ERR)
-        throw std::runtime_error("Failed to install SIGCHLD handler");
 }
 
 void MasterProcess::forkWorkers(const Config &config)
 {
     int nWorkers = config.getWorkerProcesses();
+    std::vector<int> listenFds = getListenFds();
     
     for (int i = 0; i < nWorkers; ++i)
     {
@@ -156,16 +148,10 @@ void MasterProcess::forkWorkers(const Config &config)
         else if (pid == 0)
         {
             // Child process: become worker
-            // TODO: Call WorkerProcess::Run() with listen FDs
+            WorkerProcess worker;
+            worker.Run(listenFds);
             
-            std::cout << "Worker process " << getpid() << " started" << std::endl;
-            
-            // For now, just sleep (placeholder until WorkerProcess is implemented)
-            while (true)
-            {
-                sleep(1);
-            }
-            
+            // Should never reach here
             _exit(0);
         }
         else
@@ -175,6 +161,16 @@ void MasterProcess::forkWorkers(const Config &config)
             std::cout << "Forked worker " << i << " (PID: " << pid << ")" << std::endl;
         }
     }
+}
+
+std::vector<int> MasterProcess::getListenFds() const
+{
+    std::vector<int> fds;
+    for (size_t i = 0; i < serverSockets.size(); ++i)
+    {
+        fds.push_back(serverSockets[i]->getFd());
+    }
+    return fds;
 }
 
 void MasterProcess::addWorkerPid(pid_t pid)

@@ -4,6 +4,7 @@
 # include "../libs/Libs.hpp"
 # include "../config/Config.hpp"
 # include "../socket/ServerSocket.hpp"
+# include "../process/WorkerProcess.hpp"
 # include <vector>
 # include <sys/types.h>
 
@@ -16,6 +17,7 @@ private:
     // Setup and initialization
     void setupServerSockets(const Config &config);
     void forkWorkers(const Config &config);
+    std::vector<int> getListenFds() const;
     
     // Signal handling
     void installSignalHandlers();
