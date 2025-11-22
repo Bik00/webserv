@@ -1,0 +1,41 @@
+#ifndef CLIENT_SOCKET_HPP
+# define CLIENT_SOCKET_HPP
+
+# include "BaseSocket.hpp"
+
+class ClientSocket : public BaseSocket
+{
+private:
+    struct sockaddr_in addr;
+    socklen_t addrLen;
+    std::string recvBuffer;
+    std::string sendBuffer;
+    time_t lastActivity;
+    bool closed;
+
+public:
+    ClientSocket(void);
+    ClientSocket(int fd, const struct sockaddr_in &addr, socklen_t addrLen);
+    ~ClientSocket(void);
+    ClientSocket(const ClientSocket &ref);
+    ClientSocket &operator=(const ClientSocket &ref);
+
+    void setClose();
+
+    // Buffers
+    void appendRecv(const std::string &data);
+    const std::string &getRecvBuffer() const;
+    std::string &getSendBuffer();
+
+    // Activity
+    void touch();
+    time_t getLastActivity() const;
+
+    // Address
+    const struct sockaddr_in &getAddr() const;
+    socklen_t getAddrLen() const;
+
+    bool isClosed() const;
+};
+
+#endif /* CLIENT_SOCKET_HPP */

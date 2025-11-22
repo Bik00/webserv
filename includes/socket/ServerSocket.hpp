@@ -1,23 +1,20 @@
 #ifndef SERVER_SOCKET_HPP
 # define SERVER_SOCKET_HPP
 
-# include "../libs/Libs.hpp"
+# include "BaseSocket.hpp"
 
-class ServerSocket
+class ServerSocket : public BaseSocket
 {
 private:
-    int fd;
-    std::string host;
-    int port;
     bool bound;
-    
+
 public:
     ServerSocket(void);
     ServerSocket(const std::string &host, int port);
     ~ServerSocket(void);
     ServerSocket(const ServerSocket &ref);
     ServerSocket &operator=(const ServerSocket &ref);
-    
+
     // Socket operations
     void setBind();
     void setListen();
