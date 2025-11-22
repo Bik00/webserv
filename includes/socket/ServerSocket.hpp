@@ -19,7 +19,6 @@ public:
     void setBind();
     void setListen();
     void setClose();
-    void setNonBlocking();
 
     // Getters
     int getFd() const;

@@ -113,7 +113,6 @@ void MasterProcess::setupServerSockets(const Config &config)
         ServerSocket *sock = new ServerSocket(host, port);
         sock->setBind();
         sock->setListen();
-        sock->setNonBlocking();
         
         serverSockets.push_back(sock);
         

@@ -37,25 +37,6 @@ void BaseSocket::setClose()
     }
 }
 
-void BaseSocket::setNonBlocking()
-{
-    if (fd < 0)
-    {
-        throw std::runtime_error("Cannot set non-blocking on invalid socket");
-    }
-
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0)
-    {
-        throw std::runtime_error("Failed to get socket flags");
-    }
-
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-        throw std::runtime_error("Failed to set socket non-blocking");
-    }
-}
-
 int BaseSocket::getFd() const
 {
     return fd;

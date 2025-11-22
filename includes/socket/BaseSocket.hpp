@@ -19,7 +19,6 @@ public:
 
     /* Generic socket operations */
     virtual void setClose();
-    void setNonBlocking();
 
     /* Getters */
     int getFd() const;

@@ -37,7 +37,7 @@ void ServerSocket::setBind()
         return;
 
     // Create socket (explicit TCP protocol)
-    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
     if (fd < 0)
     {
         throw std::runtime_error("Failed to create socket");
@@ -99,11 +99,6 @@ void ServerSocket::setListen()
     {
         throw std::runtime_error("Failed to listen on socket");
     }
-}
-
-void ServerSocket::setNonBlocking()
-{
-    BaseSocket::setNonBlocking();
 }
 
 void ServerSocket::setClose()
