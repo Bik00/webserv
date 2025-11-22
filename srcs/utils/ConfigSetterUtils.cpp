@@ -146,7 +146,6 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
     GeneralParseUtils gparse;
     std::string line;
     size_t lineno = 0;
-    int workers = DEFAULT_WORKER_PROCESSES;
     bool ret = true;
 
     while (std::getline(is, line))
@@ -159,11 +158,7 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
         std::string blockName;
         if (gparse.ParseBlockHeader(s, blockName))
         {
-            if (blockName == "event")
-            {
-                ret = setEventBlock(is, config);
-            }
-            else if (blockName == "http")
+            if (blockName == "http")
             {
                 ret = setHttpBlock(is, config);
             }
@@ -192,61 +187,9 @@ bool ConfigSetterUtils::setGlobalValue(std::istream &is, Config &config)
 
         std::string key, val;
         if (!gparse.ParseDirective(s, key, val)) continue; // not a directive
-        if (key == "worker_processes")
-        {
-            int v = 0;
-            if (!gparse.ParsePositiveInt(val, v))
-            {
-                std::ostringstream ss;
-                ss << "Invalid worker_processes value at global:" << lineno;
-                throw std::runtime_error(ss.str());
-            }
-            workers = v;
-        }
     }
 
-    if (ret)
-        config.setWorkerProcesses(workers);
     return ret;
-}
-
-bool ConfigSetterUtils::setEventBlock(std::istream &is, Config &config)
-{
-    GeneralParseUtils gparse;
-    std::string body;
-    EventBlock eventBlock; // eventBlock initialized with DEFAULT_WORKER_CONNECTIONS
-
-    if (!gparse.ReadBlockBody(is, body))
-    {
-        throw std::runtime_error(std::string("Unbalanced braces in event block"));
-    }
-
-    std::istringstream inner(body);
-    std::string line;
-    size_t lineno = 0;
-
-    while (std::getline(inner, line))
-    {
-        ++lineno;
-        std::string s = gparse.ParseContext(line);
-        if (s.empty()) continue;
-        std::string key, val;
-        if (!gparse.ParseDirective(s, key, val)) continue;
-        if (key == "worker_connections")
-        {
-            int v = 0;
-                if (!gparse.ParsePositiveInt(val, v))
-                {
-                    std::ostringstream ss;
-                    ss << "Invalid worker_connections value in event block at line " << lineno;
-                    throw std::runtime_error(ss.str());
-                }
-            eventBlock.setWorkerConnections(v);
-        }
-    }
-    // If parser never set workerConnections, EventBlock constructor already set DEFAULT_WORKER_CONNECTIONS
-    config.addEventBlock(eventBlock);
-    return true;
 }
 
 bool ConfigSetterUtils::setHttpBlock(std::istream &is, Config &config)

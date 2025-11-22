@@ -1,12 +1,20 @@
-#include "../../includes/process/WorkerProcess.hpp"
+#include "../../includes/process/ServerProcess.hpp"
 
-#define MAX_EVENTS 64
+// Global flag for signal handling
+static volatile sig_atomic_t g_shutdown = 0;
 
-WorkerProcess::WorkerProcess(void) : epollFd(-1)
+// Signal handlers
+static void sigterm_handler(int sig)
+{
+    (void)sig;
+    g_shutdown = 1;
+}
+
+ServerProcess::ServerProcess(void) : epollFd(-1)
 {
 }
 
-WorkerProcess::~WorkerProcess(void)
+ServerProcess::~ServerProcess(void)
 {
     // Clean up all client connections
     for (std::map<int, ClientSocket*>::iterator it = clients.begin(); 
@@ -16,81 +24,158 @@ WorkerProcess::~WorkerProcess(void)
     }
     clients.clear();
     
+    // Close epoll
     if (epollFd >= 0)
     {
         close(epollFd);
     }
+    
+    // Cleanup server sockets
+    for (size_t i = 0; i < serverSockets.size(); ++i)
+    {
+        serverSockets[i]->setClose();
+        delete serverSockets[i];
+    }
+    serverSockets.clear();
 }
 
-WorkerProcess::WorkerProcess(const WorkerProcess &ref) : epollFd(-1)
+ServerProcess::ServerProcess(const ServerProcess &ref) : epollFd(-1)
 {
     (void)ref;
 }
 
-WorkerProcess &WorkerProcess::operator=(const WorkerProcess &ref)
+ServerProcess &ServerProcess::operator=(const ServerProcess &ref)
 {
     (void)ref;
     return (*this);
 }
 
-void WorkerProcess::Run(const std::vector<int> &fds)
+void ServerProcess::Run(const Config &config)
 {
-    serverSocketFds = fds;
-    
-    std::cout << "[Worker " << getpid() << "] Starting with " 
-              << serverSocketFds.size() << " listen socket(s)" << std::endl;
-    
     try
     {
+        std::cout << "Server process starting..." << std::endl;
+        
+        // Step 1: Setup server sockets
+        setupServerSockets(config);
+        std::cout << "Listening on " << serverSockets.size() << " address(es)" << std::endl;
+        
+        // Step 2: Setup epoll
         setupEpoll();
         addListenSockets();
+        
+        // Step 3: Install signal handlers
+        installSignalHandlers();
+        
+        // Step 4: Event loop
+        std::cout << "Server entering event loop..." << std::endl;
         eventLoop();
+        
+        std::cout << "Server shutting down..." << std::endl;
     }
     catch (const std::exception &e)
     {
-        std::cerr << "[Worker " << getpid() << "] Error: " 
-                  << e.what() << std::endl;
-        _exit(1);
+        std::cerr << "Server error: " << e.what() << std::endl;
+        throw;
     }
 }
 
-void WorkerProcess::setupEpoll()
+void ServerProcess::setupServerSockets(const Config &config)
+{
+    const HttpBlock &http = config.getHttpBlock();
+    const std::vector<ServerBlock> &servers = http.getServerBlocks();
+    
+    // Collect unique listen addresses
+    std::set<std::string> uniqueListens;
+    
+    for (size_t si = 0; si < servers.size(); ++si)
+    {
+        const std::vector<ListenAddr> &listens = servers[si].getListenAddrs();
+        
+        for (size_t li = 0; li < listens.size(); ++li)
+        {
+            const ListenAddr &la = listens[li];
+            std::ostringstream key;
+            key << la.host << ":" << la.port;
+            uniqueListens.insert(key.str());
+        }
+    }
+    
+    // Create, bind, and listen on each unique address
+    for (std::set<std::string>::const_iterator it = uniqueListens.begin();
+         it != uniqueListens.end(); ++it)
+    {
+        // Parse host:port from key
+        std::string key = *it;
+        size_t colonPos = key.find(':');
+        if (colonPos == std::string::npos)
+            continue;
+        
+        std::string host = key.substr(0, colonPos);
+        std::string portStr = key.substr(colonPos + 1);
+        int port = 0;
+        std::istringstream(portStr) >> port;
+        
+        // Create and setup socket
+        ServerSocket *sock = new ServerSocket(host, port);
+        sock->setBind();
+        sock->setListen();
+        
+        serverSockets.push_back(sock);
+        
+        std::cout << "Bound to " << host << ":" << port 
+                  << " (fd=" << sock->getFd() << ")" << std::endl;
+    }
+    
+    if (serverSockets.empty())
+    {
+        throw std::runtime_error("No server sockets created");
+    }
+}
+
+void ServerProcess::setupEpoll()
 {
     epollFd = epoll_create(1);
     if (epollFd < 0)
     {
         throw std::runtime_error("epoll_create() failed");
     }
-    std::cout << "[Worker " << getpid() << "] Epoll fd: " << epollFd << std::endl;
+    std::cout << "Epoll fd: " << epollFd << std::endl;
 }
 
-void WorkerProcess::addListenSockets()
+void ServerProcess::addListenSockets()
 {
-    for (size_t i = 0; i < serverSocketFds.size(); ++i)
+    for (size_t i = 0; i < serverSockets.size(); ++i)
     {
         struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLET;  // Edge-triggered for listen sockets
-        ev.data.fd = serverSocketFds[i];
+        ev.data.fd = serverSockets[i]->getFd();
         
-        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocketFds[i], &ev) < 0)
+        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSockets[i]->getFd(), &ev) < 0)
         {
             std::ostringstream err;
-            err << "epoll_ctl(ADD) failed for listen fd " << serverSocketFds[i];
+            err << "epoll_ctl(ADD) failed for listen fd " << serverSockets[i]->getFd();
             throw std::runtime_error(err.str());
         }
         
-        std::cout << "[Worker " << getpid() << "] Added listen fd " 
-                  << serverSocketFds[i] << " to epoll" << std::endl;
+        std::cout << "Added listen fd " << serverSockets[i]->getFd() << " to epoll" << std::endl;
     }
 }
 
-void WorkerProcess::eventLoop()
+void ServerProcess::installSignalHandlers()
+{
+    if (signal(SIGTERM, sigterm_handler) == SIG_ERR)
+        throw std::runtime_error("Failed to install SIGTERM handler");
+
+    if (signal(SIGINT, sigterm_handler) == SIG_ERR)
+        throw std::runtime_error("Failed to install SIGINT handler");
+}
+
+void ServerProcess::eventLoop()
 {
     struct epoll_event events[MAX_EVENTS];
     
-    std::cout << "[Worker " << getpid() << "] Entering event loop..." << std::endl;
-    
-    while (true)
+    while (!g_shutdown)
     {
         int nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1);
         
@@ -106,18 +191,7 @@ void WorkerProcess::eventLoop()
             int fd = events[i].data.fd;
             uint32_t evs = events[i].events;
             
-            // Check if this is a listen socket
-            bool isListenSocket = false;
-            for (size_t j = 0; j < serverSocketFds.size(); ++j)
-            {
-                if (serverSocketFds[j] == fd)
-                {
-                    isListenSocket = true;
-                    break;
-                }
-            }
-            
-            if (isListenSocket)
+            if (isListenSocket(fd))
             {
                 // Accept new connections
                 if (evs & EPOLLIN)
@@ -142,7 +216,17 @@ void WorkerProcess::eventLoop()
     }
 }
 
-void WorkerProcess::handleListenEvent(int listenFd)
+bool ServerProcess::isListenSocket(int fd) const
+{
+    for (size_t i = 0; i < serverSockets.size(); ++i)
+    {
+        if (serverSockets[i]->getFd() == fd)
+            return true;
+    }
+    return false;
+}
+
+void ServerProcess::handleListenEvent(int listenFd)
 {
     // Edge-triggered: accept all pending connections
     while (true)
@@ -150,7 +234,6 @@ void WorkerProcess::handleListenEvent(int listenFd)
         struct sockaddr_in clientAddr;
         socklen_t addrLen = sizeof(clientAddr);
         
-        // Use accept4 with SOCK_NONBLOCK to set non-blocking immediately
         int clientFd = accept4(listenFd, (struct sockaddr*)&clientAddr, 
                                &addrLen, SOCK_NONBLOCK);
         
@@ -167,8 +250,7 @@ void WorkerProcess::handleListenEvent(int listenFd)
             }
             else
             {
-                std::cerr << "[Worker " << getpid() << "] accept4() error: " 
-                          << strerror(errno) << std::endl;
+                std::cerr << "accept4() error: " << strerror(errno) << std::endl;
                 break;
             }
         }
@@ -184,18 +266,16 @@ void WorkerProcess::handleListenEvent(int listenFd)
         
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) < 0)
         {
-            std::cerr << "[Worker " << getpid() << "] epoll_ctl(ADD) failed for client: "
-                      << strerror(errno) << std::endl;
+            std::cerr << "epoll_ctl(ADD) failed for client: " << strerror(errno) << std::endl;
             closeClient(clientFd);
             continue;
         }
         
-        std::cout << "[Worker " << getpid() << "] Accepted client fd " 
-                  << clientFd << std::endl;
+        std::cout << "Accepted client fd " << clientFd << std::endl;
     }
 }
 
-void WorkerProcess::handleClientRead(int fd)
+void ServerProcess::handleClientRead(int fd)
 {
     ClientSocket *client = clients[fd];
     if (!client)
@@ -216,8 +296,7 @@ void WorkerProcess::handleClientRead(int fd)
         else if (n == 0)
         {
             // Connection closed by client
-            std::cout << "[Worker " << getpid() << "] Client " << fd 
-                      << " closed connection" << std::endl;
+            std::cout << "Client " << fd << " closed connection" << std::endl;
             closeClient(fd);
             break;
         }
@@ -234,8 +313,7 @@ void WorkerProcess::handleClientRead(int fd)
             }
             else
             {
-                std::cerr << "[Worker " << getpid() << "] recv() error: " 
-                          << strerror(errno) << std::endl;
+                std::cerr << "recv() error: " << strerror(errno) << std::endl;
                 closeClient(fd);
                 break;
             }
@@ -258,7 +336,7 @@ void WorkerProcess::handleClientRead(int fd)
     }
 }
 
-void WorkerProcess::handleClientWrite(int fd)
+void ServerProcess::handleClientWrite(int fd)
 {
     ClientSocket *client = clients[fd];
     if (!client)
@@ -292,8 +370,7 @@ void WorkerProcess::handleClientWrite(int fd)
             }
             else
             {
-                std::cerr << "[Worker " << getpid() << "] send() error: " 
-                          << strerror(errno) << std::endl;
+                std::cerr << "send() error: " << strerror(errno) << std::endl;
                 closeClient(fd);
                 break;
             }
@@ -303,13 +380,12 @@ void WorkerProcess::handleClientWrite(int fd)
     // If send buffer is empty, close connection (for now, no keep-alive)
     if (sendBuf.empty())
     {
-        std::cout << "[Worker " << getpid() << "] Response sent, closing client " 
-                  << fd << std::endl;
+        std::cout << "Response sent, closing client " << fd << std::endl;
         closeClient(fd);
     }
 }
 
-void WorkerProcess::closeClient(int fd)
+void ServerProcess::closeClient(int fd)
 {
     std::map<int, ClientSocket*>::iterator it = clients.find(fd);
     if (it == clients.end())

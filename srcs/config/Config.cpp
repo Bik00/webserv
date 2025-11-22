@@ -2,7 +2,6 @@
 
 Config::Config(void)
 {
-    workerProcesses = DEFAULT_WORKER_PROCESSES;
 }
 
 Config::~Config(void)
@@ -18,10 +17,8 @@ Config &Config::operator=(const Config &ref)
 {
     if (this != &ref)
     {
-    this->httpBlock = ref.httpBlock;
-    this->eventBlock = ref.eventBlock;
-    this->configPath = ref.configPath;
-    this->workerProcesses = ref.workerProcesses;
+        this->httpBlock = ref.httpBlock;
+        this->configPath = ref.configPath;
     }
     return *this;
 }
@@ -29,16 +26,6 @@ Config &Config::operator=(const Config &ref)
 void Config::setConfigPath(const std::string &path)
 {
     this->configPath = path;
-}
-
-void Config::setWorkerProcesses(int num)
-{
-    this->workerProcesses = num;
-}
-
-void Config::addEventBlock(const EventBlock &eventBlock)
-{
-    this->eventBlock = eventBlock;
 }
 
 void Config::addHttpBlock(const HttpBlock &httpBlock)
@@ -49,11 +36,6 @@ void Config::addHttpBlock(const HttpBlock &httpBlock)
 const std::string &Config::getConfigPath() const
 {
     return this->configPath;
-}
-
-int Config::getWorkerProcesses() const
-{
-    return this->workerProcesses;
 }
 
 const HttpBlock &Config::getHttpBlock() const
@@ -69,7 +51,6 @@ static void printIndent(int depth)
 void Config::printConfig() const
 {
     std::cout << "Config: " << this->configPath << std::endl;
-    std::cout << "Worker processes: " << this->workerProcesses << std::endl;
 
     // HTTP block
     printIndent(0);

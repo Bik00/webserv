@@ -22,11 +22,11 @@ ServerManager &ServerManager::operator=(const ServerManager &ref)
 void ServerManager::Run(int argc, char **argv)
 {
     ConfigParser parser;
-    MasterProcess masterProcess;
+    ServerProcess serverProcess;
 
     if (parser.Parse(argc, argv, this->config) == false)
         throw std::runtime_error("Configuration parsing failed");
-    masterProcess.Run(this->config);
+    serverProcess.Run(this->config);
 }
 
 int ServerManager::exitServer(const std::string &message)

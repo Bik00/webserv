@@ -8,7 +8,6 @@ class ConfigSetterUtils
 private:
     bool hasError; // track if any parsing error has occurred
     bool setGlobalValue(std::istream &is, Config &config);
-    bool setEventBlock(std::istream &is, Config &config);
     bool setHttpBlock(std::istream &is, Config &config);
     bool setServerBlock(std::istream &is, HttpBlock &httpBlock);
     bool setLocationBlock(std::istream &is, ServerBlock &serverBlock, const std::string &path);

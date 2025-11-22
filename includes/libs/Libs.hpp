@@ -40,8 +40,6 @@
 
 # define DEFAULT_CONFIG_PATH "./config/default.conf"
 
-# define DEFAULT_WORKER_PROCESSES 1
-# define DEFAULT_WORKER_CONNECTIONS 1024
 # define DEFAULT_LISTEN_HOST "0.0.0.0"
 # define DEFAULT_LISTEN_PORT 80
 # define DEFAULT_ROOT "./www"

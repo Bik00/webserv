@@ -79,18 +79,6 @@ bool ValidateSemanticUtils::checkPathSyntax(const std::string &path)
     return false;
 }
 
-// Validate worker_processes
-void ValidateSemanticUtils::validateWorkerProcesses(const Config &config)
-{
-    int wp = config.getWorkerProcesses();
-    if (wp <= 0)
-    {
-        std::ostringstream err;
-        err << "Invalid worker_processes: " << wp << " (must be > 0)";
-        throw std::runtime_error(err.str());
-    }
-}
-
 // Validate HTTP block exists
 void ValidateSemanticUtils::validateHttpBlock(const Config &config)
 {
@@ -541,7 +529,6 @@ bool ValidateSemanticUtils::ValidateSemantic(Config &config)
     try
     {
         // Priority A validations
-        validateWorkerProcesses(config);
         validateHttpBlock(config);
         
         const HttpBlock &http = config.getHttpBlock();

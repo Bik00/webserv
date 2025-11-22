@@ -13,7 +13,6 @@ private:
     bool checkPathSyntax(const std::string &path);
     
     // Validation functions
-    void validateWorkerProcesses(const Config &config);
     void validateHttpBlock(const Config &config);
     void validateServerBlock(const ServerBlock &server, size_t serverIndex);
     void validateLocationBlock(const LocationBlock &location, size_t serverIndex, size_t locIndex);

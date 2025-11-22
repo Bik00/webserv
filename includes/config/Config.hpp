@@ -3,15 +3,12 @@
 
 # include "../libs/Libs.hpp"
 # include "./block/HttpBlock.hpp"
-# include "./block/EventBlock.hpp"
 
 class Config
 {
 private:
 	std::string	configPath;
-	int			workerProcesses;
 	HttpBlock	httpBlock;
-	EventBlock	eventBlock;
 public:
 	Config(void);
 	~Config(void);
@@ -19,14 +16,10 @@ public:
 	Config &operator=(const Config &ref);
 
 	void setConfigPath(const std::string &path);
-	void setWorkerProcesses(int num);
-	void addEventBlock(const EventBlock &eventBlock);
 	void addHttpBlock(const HttpBlock &httpBlock);
 
 	const HttpBlock &getHttpBlock() const;
-
 	const std::string &getConfigPath() const;
-	int getWorkerProcesses() const;
 	void printConfig() const;
 };
 

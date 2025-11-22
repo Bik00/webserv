@@ -4,7 +4,7 @@
 # include "../libs/Libs.hpp"
 # include "../config/Config.hpp"
 # include "../parse/ConfigParser.hpp"
-# include "../process/MasterProcess.hpp"
+# include "../process/ServerProcess.hpp"
 
 class ServerManager
 {
