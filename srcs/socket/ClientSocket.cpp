@@ -16,7 +16,9 @@ ClientSocket::~ClientSocket(void)
 }
 
 ClientSocket::ClientSocket(const ClientSocket &ref)
-    : BaseSocket(ref), addr(ref.addr), addrLen(ref.addrLen), recvBuffer(ref.recvBuffer), sendBuffer(ref.sendBuffer), lastActivity(ref.lastActivity), closed(ref.closed)
+    : BaseSocket(ref), addr(ref.addr), addrLen(ref.addrLen), recvBuffer(ref.recvBuffer), 
+      sendBuffer(ref.sendBuffer), lastActivity(ref.lastActivity), closed(ref.closed),
+      transaction(ref.transaction)
 {
 }
 
@@ -31,6 +33,7 @@ ClientSocket &ClientSocket::operator=(const ClientSocket &ref)
         sendBuffer = ref.sendBuffer;
         lastActivity = ref.lastActivity;
         closed = ref.closed;
+        transaction = ref.transaction;
     }
     return *this;
 }
@@ -79,4 +82,14 @@ socklen_t ClientSocket::getAddrLen() const
 bool ClientSocket::isClosed() const
 {
     return closed;
+}
+
+HttpTransaction &ClientSocket::getTransaction()
+{
+    return transaction;
+}
+
+const HttpTransaction &ClientSocket::getTransaction() const
+{
+    return transaction;
 }

@@ -2,6 +2,7 @@
 # define CLIENT_SOCKET_HPP
 
 # include "BaseSocket.hpp"
+# include "../http/HttpTransaction.hpp"
 
 class ClientSocket : public BaseSocket
 {
@@ -12,6 +13,7 @@ private:
     std::string sendBuffer;
     time_t lastActivity;
     bool closed;
+    HttpTransaction transaction;
 
 public:
     ClientSocket(void);
@@ -36,6 +38,10 @@ public:
     socklen_t getAddrLen() const;
 
     bool isClosed() const;
+    
+    // HTTP Transaction
+    HttpTransaction &getTransaction();
+    const HttpTransaction &getTransaction() const;
 };
 
 #endif /* CLIENT_SOCKET_HPP */

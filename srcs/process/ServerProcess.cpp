@@ -278,6 +278,71 @@ void ServerProcess::handleClientRead(int fd)
         {
             client->appendRecv(std::string(buf, n));
             client->touch();
+            
+            // Parse HTTP request
+            HttpTransaction &trans = client->getTransaction();
+            trans.appendRequestData(std::string(buf, n));
+            
+            // Check if request is complete
+            if (trans.isRequestComplete())
+            {
+                const HttpRequest &req = trans.getRequest();
+                
+                std::cout << "Received HTTP Request:" << std::endl;
+                std::cout << "  Method: " << req.getMethod() << std::endl;
+                std::cout << "  URI: " << req.getUri() << std::endl;
+                std::cout << "  Path: " << req.getPath() << std::endl;
+                std::cout << "  Query: " << req.getQuery() << std::endl;
+                std::cout << "  Version: " << req.getHttpVersion() << std::endl;
+                
+                // Print headers
+                const std::map<std::string, std::string> &headers = req.getHeaders();
+                if (!headers.empty())
+                {
+                    std::cout << "  Headers:" << std::endl;
+                    for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+                         it != headers.end(); ++it)
+                    {
+                        std::cout << "    " << it->first << ": " << it->second << std::endl;
+                    }
+                }
+                
+                // Print body if present
+                if (!req.getBody().empty())
+                {
+                    std::cout << "  Body (" << req.getBody().size() << " bytes): " 
+                              << req.getBody() << std::endl;
+                }
+                else if (req.getContentLength() > 0)
+                {
+                    std::cout << "  Body expected (" << req.getContentLength() 
+                              << " bytes) but empty! ParseState=" << req.getState() << std::endl;
+                }
+                
+                // Check for parsing errors
+                if (!req.isRequestValid())
+                {
+                    std::cerr << "  ERROR: " << req.getErrorMsg() << std::endl;
+                    
+                    // Build error response
+                    HttpResponse &resp = trans.getResponse();
+                    resp.setStatus(req.getErrorCode());
+                    resp.setBody("<html><body><h1>" + resp.getReasonPhrase() + "</h1></body></html>");
+                    resp.setContentType("text/html");
+                    resp.setContentLength(resp.getBody().size());
+                    resp.setConnection("close");
+                    client->getSendBuffer() = resp.build();
+                }
+                else
+                {
+                    // Build successful response
+                    trans.buildResponse();
+                    client->getSendBuffer() = trans.getResponseData();
+                }
+                
+                // Data parsed, break from read loop
+                break;
+            }
         }
         else if (n == 0)
         {
@@ -291,21 +356,6 @@ void ServerProcess::handleClientRead(int fd)
             // n < 0: No more data (EAGAIN/EWOULDBLOCK) or error
             break;
         }
-    }
-    
-    // TODO: Parse HTTP request and prepare response
-    // For now, just echo back a simple HTTP response
-    if (!client->getRecvBuffer().empty())
-    {
-        std::ostringstream response;
-        response << "HTTP/1.1 200 OK\r\n";
-        response << "Content-Type: text/plain\r\n";
-        response << "Content-Length: 13\r\n";
-        response << "Connection: close\r\n";
-        response << "\r\n";
-        response << "Hello, World!";
-        
-        client->getSendBuffer() = response.str();
     }
 }
 

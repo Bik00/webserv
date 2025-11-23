@@ -5,16 +5,57 @@
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 
+// Transaction states
+enum TransactionState
+{
+    TRANS_READING_REQUEST,
+    TRANS_PROCESSING,
+    TRANS_SENDING_RESPONSE,
+    TRANS_COMPLETE,
+    TRANS_ERROR
+};
+
 class HttpTransaction
 {
 private:
     HttpRequest request;
     HttpResponse response;
+    TransactionState state;
+    time_t startTime;
+    time_t lastActivityTime;
+
 public:
     HttpTransaction(void);
     ~HttpTransaction(void);
     HttpTransaction(const HttpTransaction &ref);
     HttpTransaction &operator=(const HttpTransaction &ref);
+    
+    // Request handling
+    bool appendRequestData(const std::string &data);
+    bool isRequestComplete(void) const;
+    
+    // Response handling
+    void buildResponse(void);
+    const std::string &getResponseData(void) const;
+    bool isResponseComplete(void) const;
+    
+    // State management
+    TransactionState getState(void) const;
+    void setState(TransactionState s);
+    
+    // Getters
+    HttpRequest &getRequest(void);
+    HttpResponse &getResponse(void);
+    const HttpRequest &getRequest(void) const;
+    const HttpResponse &getResponse(void) const;
+    
+    // Timing
+    time_t getStartTime(void) const;
+    time_t getLastActivityTime(void) const;
+    void touch(void);
+    
+    // Utility
+    void reset(void);
 };
 
 #endif /* HTTP_TRANSACTION_HPP */
