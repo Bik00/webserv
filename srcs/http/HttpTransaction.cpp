@@ -53,6 +53,35 @@ void HttpTransaction::buildResponse(const ServerBlock *server, const LocationBlo
     serverBlock = server;
     locationBlock = location;
     
+    // Check if this is a file upload request (POST with multipart/form-data)
+    if (request.getMethod() == "POST" && locationBlock)
+    {
+        std::string contentType = request.getHeader("content-type");
+        
+        // Check if this location has upload_store configured
+        if (!locationBlock->getUploadStore().empty() && 
+            contentType.find("multipart/form-data") != std::string::npos)
+        {
+            std::cout << "[UPLOAD] Processing file upload to: " << locationBlock->getUploadStore() << std::endl;
+            
+            FileUploadHandler uploader(locationBlock->getUploadStore());
+            
+            if (uploader.handleUpload(request, response))
+            {
+                std::cout << "[UPLOAD] Upload successful" << std::endl;
+                state = TRANS_SENDING_RESPONSE;
+                return;
+            }
+            else
+            {
+                std::cout << "[UPLOAD] Upload failed" << std::endl;
+                // Response already set by handler
+                state = TRANS_SENDING_RESPONSE;
+                return;
+            }
+        }
+    }
+    
     // Check if this is a CGI request
     if (locationBlock && locationBlock->hasCgi() && serverBlock)
     {

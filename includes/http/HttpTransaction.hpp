@@ -4,6 +4,7 @@
 # include "../libs/Libs.hpp"
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
+# include "FileUploadHandler.hpp"
 
 // Forward declarations
 class ServerBlock;

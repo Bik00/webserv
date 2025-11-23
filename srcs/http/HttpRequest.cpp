@@ -174,7 +174,7 @@ bool HttpRequest::parseHeaders()
             parsedBytes += 2; // Skip CRLF
             
             // Check if we need to parse body
-            if (hasHeader("Content-Length") || hasHeader("Transfer-Encoding"))
+            if (hasHeader("content-length") || hasHeader("transfer-encoding"))
             {
                 // Extract Content-Length
                 std::string clStr = getHeader("content-length");
