@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 갤러리 - Webserv</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .image-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .image-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .image-wrapper {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .image-card:hover .image-wrapper img {
+            transform: scale(1.1);
+        }
+        
+        .image-info {
+            padding: 20px;
+        }
+        
+        .image-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .image-size {
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .empty-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            color: #999;
+            font-size: 1.3em;
+            margin-bottom: 30px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 40px auto;
+            max-width: 600px;
+        }
+        
+        /* Modal for full image view */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close-modal:hover {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🖼️ 이미지 갤러리</h1>
+        <p>업로드된 이미지들을 확인하세요</p>
+        <div class="controls">
+            <a href="/upload.html" class="btn btn-primary">➕ 새 이미지 업로드</a>
+            <button class="btn btn-secondary" onclick="location.reload()">🔄 새로고침</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="loading" id="loading">
+            <div>🔄 이미지 로딩 중...</div>
+        </div>
+        
+        <div class="gallery" id="gallery"></div>
+        
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">📭</div>
+            <div class="empty-text">아직 업로드된 이미지가 없습니다</div>
+            <a href="/upload.html" class="btn btn-primary">첫 이미지 업로드하기</a>
+        </div>
+        
+        <div class="error" id="error" style="display: none;"></div>
+    </div>
+    
+    <!-- Modal for full image -->
+    <div class="modal" id="modal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+    
+    <script>
+        const gallery = document.getElementById('gallery');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+        const errorDiv = document.getElementById('error');
+        const modal = document.getElementById('modal');
+        const modalImage = document.getElementById('modalImage');
+        
+        // Load images from CGI script
+        async function loadGallery() {
+            try {
+                const response = await fetch('/cgi-bin/gallery.py');
+                
+                if (!response.ok) {
+                    throw new Error('갤러리 로드 실패: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                loading.style.display = 'none';
+                
+                if (!data.images || data.images.length === 0) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                displayImages(data.images);
+            } catch (error) {
+                loading.style.display = 'none';
+                errorDiv.textContent = '❌ ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        function displayImages(images) {
+            gallery.innerHTML = '';
+            
+            images.forEach(image => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+                card.onclick = () => openModal(image.url);
+                
+                card.innerHTML = `
+                    <div class="image-wrapper">
+                        <img src="${image.url}" alt="${image.name}" loading="lazy">
+                    </div>
+                    <div class="image-info">
+                        <div class="image-name">📷 ${image.name}</div>
+                        <div class="image-size">💾 ${formatFileSize(image.size)}</div>
+                    </div>
+                `;
+                
+                gallery.appendChild(card);
+            });
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        function openModal(imageUrl) {
+            modal.classList.add('active');
+            modalImage.src = imageUrl;
+        }
+        
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+        
+        // Close modal on click outside image
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // Load gallery on page load
+        loadGallery();
+    </script>
+</body>
+</html>

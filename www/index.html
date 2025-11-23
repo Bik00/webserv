@@ -1,14 +1,160 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>webserv - Welcome</title>
-	<style>body{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#222}a{color:#0077cc}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv - Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .feature {
+            padding: 30px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .feature-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .feature-desc {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 18px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-	<h1>Welcome to webserv</h1>
-	<p>This is the default index page served by <strong>webserv</strong>.</p>
-	<p>Available test links:</p>
+    <div class="container">
+        <h1>🚀 Webserv</h1>
+        <p class="subtitle">RFC 준수 HTTP/1.1 웹서버 + CGI 지원</p>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">📤</div>
+                <div class="feature-title">이미지 업로드</div>
+                <div class="feature-desc">드래그 앤 드롭으로 쉽게 업로드</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🖼️</div>
+                <div class="feature-title">갤러리</div>
+                <div class="feature-desc">업로드된 이미지 실시간 확인</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">CGI 처리</div>
+                <div class="feature-desc">Python CGI로 동적 처리</div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <a href="/upload.html" class="btn btn-primary">📤 이미지 업로드</a>
+            <a href="/gallery.html" class="btn btn-secondary">🖼️ 갤러리 보기</a>
+        </div>
+        
+        <div class="footer">
+            <p>Built with C++98 | RFC 7230-7235 & RFC 3875 Compliant</p>
+        </div>
+    </div>
 </body>
 </html>
