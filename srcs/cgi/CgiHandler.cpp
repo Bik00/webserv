@@ -194,6 +194,20 @@ bool CgiHandler::execute(void)
         return false;
     }
     
+    // Create pipe for CGI input (POST body)
+    int stdinPipe[2];
+    bool hasPostBody = (request.getMethod() == "POST" && !request.getBody().empty());
+    
+    if (hasPostBody)
+    {
+        if (pipe(stdinPipe) < 0)
+        {
+            close(pipeFd[0]);
+            close(pipeFd[1]);
+            return false;
+        }
+    }
+    
     // Fork child process
     childPid = fork();
     
@@ -202,6 +216,11 @@ bool CgiHandler::execute(void)
         // Fork failed
         close(pipeFd[0]);
         close(pipeFd[1]);
+        if (hasPostBody)
+        {
+            close(stdinPipe[0]);
+            close(stdinPipe[1]);
+        }
         return false;
     }
     
@@ -215,9 +234,11 @@ bool CgiHandler::execute(void)
         close(pipeFd[1]);
         
         // Setup stdin for POST body
-        if (request.getMethod() == "POST" && !request.getBody().empty())
+        if (hasPostBody)
         {
-            // TODO: Implement stdin pipe for POST body
+            dup2(stdinPipe[0], STDIN_FILENO);
+            close(stdinPipe[0]);
+            close(stdinPipe[1]);
         }
         
         // Convert environment variables to char* array
@@ -255,6 +276,15 @@ bool CgiHandler::execute(void)
     close(pipeFd[1]);  // Close write end
     pipeFd[1] = -1;
     
+    // Write POST body to child's stdin
+    if (hasPostBody)
+    {
+        close(stdinPipe[0]);  // Close read end
+        const std::string &postBody = request.getBody();
+        write(stdinPipe[1], postBody.c_str(), postBody.size());
+        close(stdinPipe[1]);  // Close after writing
+    }
+    
     // Read CGI output (non-blocking would be better for production)
     char buffer[4096];
     ssize_t n;
@@ -289,6 +319,7 @@ void CgiHandler::buildResponse(HttpResponse &response)
         response.setBody("CGI script produced no output");
         response.setContentType("text/plain");
         response.setContentLength(response.getBody().size());
+        response.build();
         return;
     }
     
@@ -312,6 +343,7 @@ void CgiHandler::buildResponse(HttpResponse &response)
         response.setBody(cgiOutput);
         response.setContentType("text/html");
         response.setContentLength(cgiOutput.size());
+        response.build();
         return;
     }
     
@@ -367,6 +399,9 @@ void CgiHandler::buildResponse(HttpResponse &response)
     // Set Content-Length if not already set by CGI
     if (!response.hasHeader("Content-Length"))
         response.setContentLength(body.size());
+    
+    // Build the HTTP response string
+    response.build();
 }
 
 bool CgiHandler::isComplete(void) const
