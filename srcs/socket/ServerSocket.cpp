@@ -126,3 +126,13 @@ int ServerSocket::getPort() const
 {
     return BaseSocket::getPort();
 }
+
+void ServerSocket::addServer(const ServerBlock *server)
+{
+    servers.push_back(server);
+}
+
+const std::vector<const ServerBlock*> &ServerSocket::getServers() const
+{
+    return servers;
+}

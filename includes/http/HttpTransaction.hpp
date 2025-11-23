@@ -5,6 +5,10 @@
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 
+// Forward declarations
+class ServerBlock;
+class LocationBlock;
+
 // Transaction states
 enum TransactionState
 {
@@ -23,6 +27,8 @@ private:
     TransactionState state;
     time_t startTime;
     time_t lastActivityTime;
+    const ServerBlock *serverBlock;
+    const LocationBlock *locationBlock;
 
 public:
     HttpTransaction(void);
@@ -35,7 +41,7 @@ public:
     bool isRequestComplete(void) const;
     
     // Response handling
-    void buildResponse(void);
+    void buildResponse(const ServerBlock *server = NULL, const LocationBlock *location = NULL);
     const std::string &getResponseData(void) const;
     bool isResponseComplete(void) const;
     

@@ -14,10 +14,11 @@ private:
     time_t lastActivity;
     bool closed;
     HttpTransaction transaction;
+    int listenFd;  // The server socket that accepted this client
 
 public:
     ClientSocket(void);
-    ClientSocket(int fd, const struct sockaddr_in &addr, socklen_t addrLen);
+    ClientSocket(int fd, const struct sockaddr_in &addr, socklen_t addrLen, int listenFd = -1);
     ~ClientSocket(void);
     ClientSocket(const ClientSocket &ref);
     ClientSocket &operator=(const ClientSocket &ref);
@@ -42,6 +43,10 @@ public:
     // HTTP Transaction
     HttpTransaction &getTransaction();
     const HttpTransaction &getTransaction() const;
+    
+    // Server socket reference
+    int getListenFd() const;
+    void setListenFd(int fd);
 };
 
 #endif /* CLIENT_SOCKET_HPP */

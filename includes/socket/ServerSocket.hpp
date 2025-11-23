@@ -2,11 +2,15 @@
 # define SERVER_SOCKET_HPP
 
 # include "BaseSocket.hpp"
+# include <vector>
+
+class ServerBlock;  // Forward declaration
 
 class ServerSocket : public BaseSocket
 {
 private:
     bool bound;
+    std::vector<const ServerBlock*> servers;  // Servers listening on this socket
 
 public:
     ServerSocket(void);
@@ -25,6 +29,10 @@ public:
     const std::string &getHost() const;
     int getPort() const;
     bool isBound() const;
+    
+    // Server management
+    void addServer(const ServerBlock *server);
+    const std::vector<const ServerBlock*> &getServers() const;
 };
 
 #endif /* SERVER_SOCKET_HPP */

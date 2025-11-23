@@ -1,11 +1,11 @@
 #include "../../includes/socket/ClientSocket.hpp"
 
-ClientSocket::ClientSocket(void) : BaseSocket(), addr(), addrLen(0), recvBuffer(), sendBuffer(), lastActivity(time(NULL)), closed(false)
+ClientSocket::ClientSocket(void) : BaseSocket(), addr(), addrLen(0), recvBuffer(), sendBuffer(), lastActivity(time(NULL)), closed(false), listenFd(-1)
 {
 }
 
-ClientSocket::ClientSocket(int afd, const struct sockaddr_in &a, socklen_t aLen)
-    : BaseSocket(), addr(a), addrLen(aLen), recvBuffer(), sendBuffer(), lastActivity(time(NULL)), closed(false)
+ClientSocket::ClientSocket(int afd, const struct sockaddr_in &a, socklen_t aLen, int lfd)
+    : BaseSocket(), addr(a), addrLen(aLen), recvBuffer(), sendBuffer(), lastActivity(time(NULL)), closed(false), listenFd(lfd)
 {
     fd = afd;
 }
@@ -18,7 +18,7 @@ ClientSocket::~ClientSocket(void)
 ClientSocket::ClientSocket(const ClientSocket &ref)
     : BaseSocket(ref), addr(ref.addr), addrLen(ref.addrLen), recvBuffer(ref.recvBuffer), 
       sendBuffer(ref.sendBuffer), lastActivity(ref.lastActivity), closed(ref.closed),
-      transaction(ref.transaction)
+      transaction(ref.transaction), listenFd(ref.listenFd)
 {
 }
 
@@ -34,6 +34,7 @@ ClientSocket &ClientSocket::operator=(const ClientSocket &ref)
         lastActivity = ref.lastActivity;
         closed = ref.closed;
         transaction = ref.transaction;
+        listenFd = ref.listenFd;
     }
     return *this;
 }
@@ -92,4 +93,14 @@ HttpTransaction &ClientSocket::getTransaction()
 const HttpTransaction &ClientSocket::getTransaction() const
 {
     return transaction;
+}
+
+int ClientSocket::getListenFd() const
+{
+    return listenFd;
+}
+
+void ClientSocket::setListenFd(int fd)
+{
+    listenFd = fd;
 }

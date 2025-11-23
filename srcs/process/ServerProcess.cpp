@@ -85,8 +85,8 @@ void ServerProcess::setupServerSockets(const Config &config)
     const HttpBlock &http = config.getHttpBlock();
     const std::vector<ServerBlock> &servers = http.getServerBlocks();
     
-    // Collect unique listen addresses
-    std::set<std::string> uniqueListens;
+    // Collect unique listen addresses with associated servers
+    std::map<std::string, std::vector<const ServerBlock*> > listenMap;
     
     for (size_t si = 0; si < servers.size(); ++si)
     {
@@ -97,16 +97,16 @@ void ServerProcess::setupServerSockets(const Config &config)
             const ListenAddr &la = listens[li];
             std::ostringstream key;
             key << la.host << ":" << la.port;
-            uniqueListens.insert(key.str());
+            listenMap[key.str()].push_back(&servers[si]);
         }
     }
     
     // Create, bind, and listen on each unique address
-    for (std::set<std::string>::const_iterator it = uniqueListens.begin();
-         it != uniqueListens.end(); ++it)
+    for (std::map<std::string, std::vector<const ServerBlock*> >::const_iterator it = listenMap.begin();
+         it != listenMap.end(); ++it)
     {
         // Parse host:port from key
-        std::string key = *it;
+        std::string key = it->first;
         size_t colonPos = key.find(':');
         if (colonPos == std::string::npos)
             continue;
@@ -121,10 +121,17 @@ void ServerProcess::setupServerSockets(const Config &config)
         sock->setBind();
         sock->setListen();
         
+        // Add all servers listening on this socket
+        const std::vector<const ServerBlock*> &sockServers = it->second;
+        for (size_t i = 0; i < sockServers.size(); ++i)
+        {
+            sock->addServer(sockServers[i]);
+        }
+        
         serverSockets.push_back(sock);
         
         std::cout << "Bound to " << host << ":" << port 
-                  << " (fd=" << sock->getFd() << ")" << std::endl;
+                  << " (fd=" << sock->getFd() << ", " << sockServers.size() << " servers)" << std::endl;
     }
     
     if (serverSockets.empty())
@@ -241,8 +248,8 @@ void ServerProcess::handleListenEvent(int listenFd)
             break;
         }
         
-        // Create ClientSocket object
-        ClientSocket *client = new ClientSocket(clientFd, clientAddr, addrLen);
+        // Create ClientSocket object with listenFd reference
+        ClientSocket *client = new ClientSocket(clientFd, clientAddr, addrLen, listenFd);
         clients[clientFd] = client;
         
         // Add to epoll with EPOLLIN | EPOLLOUT | EPOLLET
@@ -335,8 +342,34 @@ void ServerProcess::handleClientRead(int fd)
                 }
                 else
                 {
-                    // Build successful response
-                    trans.buildResponse();
+                    // Find matching server and location
+                    const ServerBlock *server = findMatchingServer(client->getListenFd(), req);
+                    const LocationBlock *location = findMatchingLocation(server, req.getPath());
+                    
+                    if (server)
+                    {
+                        std::cout << "  Matched Server: " << (server->getServerNames().empty() ? "(default)" : server->getServerNames()[0]) << std::endl;
+                    }
+                    if (location)
+                    {
+                        std::cout << "  Matched Location: " << location->getPath() << std::endl;
+                        if (location->hasCgi())
+                        {
+                            std::cout << "  CGI Enabled: Yes" << std::endl;
+                            const std::vector<std::string> &exts = location->getCgiExtensions();
+                            std::cout << "  CGI Extensions: ";
+                            for (size_t i = 0; i < exts.size(); ++i)
+                            {
+                                std::cout << exts[i];
+                                if (i + 1 < exts.size())
+                                    std::cout << ", ";
+                            }
+                            std::cout << std::endl;
+                        }
+                    }
+                    
+                    // Build response (will check for CGI internally)
+                    trans.buildResponse(server, location);
                     client->getSendBuffer() = trans.getResponseData();
                 }
                 
@@ -407,4 +440,88 @@ void ServerProcess::closeClient(int fd)
     // Delete ClientSocket (will close fd)
     delete it->second;
     clients.erase(it);
+}
+
+// Helper: Find matching ServerBlock based on listen socket and Host header
+const ServerBlock *ServerProcess::findMatchingServer(int listenFd, const HttpRequest &req) const
+{
+    // Find which ServerSocket this fd belongs to
+    const ServerSocket *listenSock = NULL;
+    for (size_t i = 0; i < serverSockets.size(); ++i)
+    {
+        if (serverSockets[i]->getFd() == listenFd)
+        {
+            listenSock = serverSockets[i];
+            break;
+        }
+    }
+    
+    if (!listenSock)
+        return NULL;
+    
+    // Get Host header
+    std::string host = req.getHeader("host");
+    
+    // Get all servers listening on this socket
+    const std::vector<const ServerBlock*> &servers = listenSock->getServers();
+    
+    if (servers.empty())
+        return NULL;
+    
+    // Try to match by server_name
+    if (!host.empty())
+    {
+        // Strip port from host if present
+        std::string hostname = host;
+        size_t colonPos = hostname.find(':');
+        if (colonPos != std::string::npos)
+            hostname = hostname.substr(0, colonPos);
+        
+        for (size_t i = 0; i < servers.size(); ++i)
+        {
+            const std::vector<std::string> &serverNames = servers[i]->getServerNames();
+            for (size_t j = 0; j < serverNames.size(); ++j)
+            {
+                if (serverNames[j] == hostname)
+                    return servers[i];
+            }
+        }
+    }
+    
+    // Return first (default) server if no match
+    return servers[0];
+}
+
+// Helper: Find matching LocationBlock for request path
+const LocationBlock *ServerProcess::findMatchingLocation(const ServerBlock *server, const std::string &path) const
+{
+    if (!server)
+        return NULL;
+    
+    const std::vector<LocationBlock> &locations = server->getLocationBlocks();
+    
+    if (locations.empty())
+        return NULL;
+    
+    // Find best matching location (longest prefix match)
+    const LocationBlock *bestMatch = NULL;
+    size_t bestMatchLen = 0;
+    
+    for (size_t i = 0; i < locations.size(); ++i)
+    {
+        const std::string &locPath = locations[i].getPath();
+        
+        // Check if path starts with location path
+        if (path.find(locPath) == 0)
+        {
+            if (locPath.length() > bestMatchLen)
+            {
+                bestMatch = &locations[i];
+                bestMatchLen = locPath.length();
+            }
+        }
+    }
+    
+    // If no match, use first location as default
+    return bestMatch ? bestMatch : &locations[0];
 }

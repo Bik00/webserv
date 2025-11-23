@@ -31,6 +31,10 @@ private:
     void closeClient(int fd);
     bool isListenSocket(int fd) const;
     
+    // Helper functions for request routing
+    const ServerBlock *findMatchingServer(int listenFd, const HttpRequest &req) const;
+    const LocationBlock *findMatchingLocation(const ServerBlock *server, const std::string &path) const;
+    
 public:
     ServerProcess(void);
     ~ServerProcess(void);

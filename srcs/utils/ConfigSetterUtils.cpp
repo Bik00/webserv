@@ -432,6 +432,18 @@ bool ConfigSetterUtils::setLocationBlock(std::istream &is, ServerBlock &serverBl
             lb.setCgiPath(val);
             continue;
         }
+        else if (key == "cgi_path")
+        {
+            if (val.empty()) throw std::runtime_error("cgi_path requires a path");
+            lb.setCgiPath(val);
+            continue;
+        }
+        else if (key == "cgi_ext")
+        {
+            if (val.empty()) throw std::runtime_error("cgi_ext requires an extension");
+            lb.addCgiExtension(val);
+            continue;
+        }
         else if (key == "return")
         {
             // expected: return <code> <target>;
