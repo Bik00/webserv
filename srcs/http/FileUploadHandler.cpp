@@ -278,8 +278,8 @@ bool FileUploadHandler::handleUpload(const HttpRequest &request, HttpResponse &r
     if (contentType.find("multipart/form-data") == std::string::npos)
     {
         response.setStatus(400, "Bad Request");
-        response.setBody("Content-Type must be multipart/form-data");
-        response.setContentType("text/plain");
+        response.setBody("{\"success\":false,\"error\":\"Content-Type must be multipart/form-data\"}");
+        response.setContentType("application/json");
         response.setContentLength(response.getBody().size());
         response.build();
         return false;
@@ -289,8 +289,8 @@ bool FileUploadHandler::handleUpload(const HttpRequest &request, HttpResponse &r
     if (!parseBoundary(contentType))
     {
         response.setStatus(400, "Bad Request");
-        response.setBody("Missing or invalid boundary in Content-Type");
-        response.setContentType("text/plain");
+        response.setBody("{\"success\":false,\"error\":\"Missing or invalid boundary in Content-Type\"}");
+        response.setContentType("application/json");
         response.setContentLength(response.getBody().size());
         response.build();
         return false;
@@ -301,8 +301,8 @@ bool FileUploadHandler::handleUpload(const HttpRequest &request, HttpResponse &r
     if (body.empty())
     {
         response.setStatus(400, "Bad Request");
-        response.setBody("Empty request body");
-        response.setContentType("text/plain");
+        response.setBody("{\"success\":false,\"error\":\"Empty request body\"}");
+        response.setContentType("application/json");
         response.setContentLength(response.getBody().size());
         response.build();
         return false;
@@ -311,8 +311,8 @@ bool FileUploadHandler::handleUpload(const HttpRequest &request, HttpResponse &r
     if (!parseMultipartBody(body))
     {
         response.setStatus(400, "Bad Request");
-        response.setBody("Failed to parse multipart body or no files found");
-        response.setContentType("text/plain");
+        response.setBody("{\"success\":false,\"error\":\"Failed to parse multipart body or no files found\"}");
+        response.setContentType("application/json");
         response.setContentLength(response.getBody().size());
         response.build();
         return false;
@@ -327,24 +327,20 @@ bool FileUploadHandler::handleUpload(const HttpRequest &request, HttpResponse &r
             savedPaths.push_back(savedPath);
     }
     
-    // Build success response
+    // Build JSON success response
     std::ostringstream bodyOss;
-    bodyOss << "<html><head><title>Upload Success</title></head><body>\n";
-    bodyOss << "<h1>Upload Successful!</h1>\n";
-    bodyOss << "<p>" << savedPaths.size() << " file(s) uploaded:</p>\n";
-    bodyOss << "<ul>\n";
+    bodyOss << "{\"success\":true,\"count\":" << savedPaths.size() << ",\"files\":[";
     for (size_t i = 0; i < savedPaths.size(); ++i)
     {
-        bodyOss << "<li>" << savedPaths[i] << " (" << files[i].size << " bytes)</li>\n";
+        if (i > 0)
+            bodyOss << ",";
+        bodyOss << "{\"path\":\"" << savedPaths[i] << "\",\"size\":" << files[i].size << "}";
     }
-    bodyOss << "</ul>\n";
-    bodyOss << "<p><a href=\"/gallery.html\">View Gallery</a></p>\n";
-    bodyOss << "<p><a href=\"/upload.html\">Upload More</a></p>\n";
-    bodyOss << "</body></html>";
+    bodyOss << "]}";
     
     response.setStatus(200, "OK");
     response.setBody(bodyOss.str());
-    response.setContentType("text/html");
+    response.setContentType("application/json");
     response.setContentLength(response.getBody().size());
     response.build();
     
