@@ -5,6 +5,7 @@
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 # include "FileUploadHandler.hpp"
+# include "StaticFileHandler.hpp"
 
 // Forward declarations
 class ServerBlock;

@@ -47,8 +47,12 @@ bool HttpRequest::parse(const std::string &data)
 {
     rawRequest += data;
     
-    while (state != PARSE_COMPLETE && state != PARSE_ERROR)
+    bool progress = true;
+    while (progress && state != PARSE_COMPLETE && state != PARSE_ERROR)
     {
+        size_t oldParsedBytes = parsedBytes;
+        ParseState oldState = state;
+        
         if (state == PARSE_REQUEST_LINE)
         {
             if (!parseRequestLine())
@@ -64,6 +68,9 @@ bool HttpRequest::parse(const std::string &data)
             if (!parseBody())
                 return false;
         }
+        
+        // Check if we made progress (either parsedBytes increased or state changed)
+        progress = (parsedBytes > oldParsedBytes) || (state != oldState);
     }
     
     return state == PARSE_COMPLETE;

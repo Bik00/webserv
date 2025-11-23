@@ -5,8 +5,8 @@ import sys
 from datetime import datetime
 
 # Configuration
-UPLOAD_DIR = "www/uploads"
-ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+UPLOAD_DIR = "uploads"
+ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.txt'}
 
 def get_file_info(filename, filepath):
     """Get file information"""

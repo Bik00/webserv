@@ -115,14 +115,18 @@ void HttpTransaction::buildResponse(const ServerBlock *server, const LocationBlo
         }
     }
     
-    // Default static response
-    response.setStatus(200);
-    response.setBody("Hello, World!");
-    response.setContentType("text/plain");
-    response.setContentLength(response.getBody().size());
-    response.setConnection("close");
-    response.build();
+    // Try serving static file
+    std::cout << "[STATIC] Trying to serve static file for: " << request.getPath() << std::endl;
+    StaticFileHandler staticHandler;
+    if (staticHandler.handleRequest(request, response, serverBlock, locationBlock))
+    {
+        std::cout << "[STATIC] Successfully served static file" << std::endl;
+        state = TRANS_SENDING_RESPONSE;
+        return;
+    }
     
+    // If static file handler returned false, it already set the error response
+    std::cout << "[STATIC] Static file handler returned error" << std::endl;
     state = TRANS_SENDING_RESPONSE;
 }
 
